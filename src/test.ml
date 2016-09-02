@@ -16,4 +16,8 @@ let () =
   Gamess.{ mult ; charge ; basis ; coord }
  in
  Gamess.create_input ~system Gamess.HF
- |> print_endline
+ |> print_endline ;
+
+ let a,b = Gamess.n_elec_alpha_beta system in
+ Printf.printf "%d  %d\n" a b
+

@@ -63,6 +63,7 @@ type data_t =
 { sym: Sym.t ;
   title: string;
   xyz: string;
+  nucl_charge: int;
 }
 
 let data_of_diatomic_homo ele r =
@@ -76,7 +77,8 @@ let data_of_diatomic_homo ele r =
   in
   { sym=Sym.D4h ;
     title=Printf.sprintf "%s2" atom ;
-    xyz=Printf.sprintf "%s  %d.0  0. 0. %f" atom charge (-.r *. 0.5)
+    xyz=Printf.sprintf "%s  %d.0  0. 0. %f" atom charge (-.r *. 0.5) ;
+    nucl_charge = 2*charge
   }
 
 let data_of_diatomic ele1 ele2 r =
@@ -92,7 +94,8 @@ let data_of_diatomic ele1 ele2 r =
   { sym=Sym.C4v ;
     title=Printf.sprintf "%s%s" atom1 atom2 ;
     xyz=Printf.sprintf "%s  %d.0  0. 0. 0.\n%s  %d.0  0. 0. %f"
-        atom1 charge1 atom2 charge2 r
+        atom1 charge1 atom2 charge2 r ;
+    nucl_charge = charge1 + charge2
   }
 
 
@@ -106,59 +109,50 @@ let string_of_data d =
     Sym.to_string d.sym ;
   ]  ^ d.xyz ^ "\n $END"
     
+
+(** MCSCF *)
+type drt_t = 
+{ nmcc: int ;
+  ndoc: int ;
+  nalp: int ;
+  nval: int ;
+  istsym: int;
+}
+
+(*
+let make_drt n_elec_alpha n_elec_beta n_e n_act =
+  let ndoc = n_e / 2 in
+  let nalp = ndoc
+*)
   
 
-
-(** HF *)
-
-let rhf_input ~charge ~basis = 
-  Printf.sprintf "
- $CONTRL
-   EXETYP=RUN COORD=UNIQUE  UNITS=ANGS
-   RUNTYP=ENERGY SCFTYP=RHF CITYP=NONE
-   MAXIT=200
-   ISPHER=1
-   MULT=1
-   ICHARG=%d
- $END
-
- $GUESS
-  GUESS=HUCKEL
- $END
-
- $BASIS
-  GBASIS=%s
- $END
-
-" charge basis 
-
-let rohf_input ~charge ~mult ~basis = 
-  Printf.sprintf "
- $CONTRL
-   EXETYP=RUN COORD=UNIQUE  UNITS=ANGS
-   RUNTYP=ENERGY SCFTYP=ROHF CITYP=NONE
-   MAXIT=200
-   ISPHER=1
-   MULT=%d
-   ICHARG=%d
- $END
-
- $GUESS
-  GUESS=HUCKEL
- $END
-
- $BASIS
-  GBASIS=%s
- $END
-
-" mult charge basis 
-
-
-(* Computation *)
+(** Computation *)
 type computation = HF | CAS of (int*int)
 
 type system =
 { mult: int ; charge: int ; basis: string ; coord: coord_t }
+
+let n_elec system =
+  let data = 
+    make_data system.coord
+  in
+  data.nucl_charge - system.charge
+
+let n_elec_alpha_beta system =
+  let n = 
+    n_elec system 
+  and m = 
+    system.mult
+  in
+  let alpha = 
+    (n + int_of_float (sqrt (float_of_int (1 + 4 * (m-1)))) - 1)/2
+  in
+  let beta = 
+    n - alpha
+  in
+  (alpha, beta)
+
+  
 
 let create_hf_input s =
   let scftyp =
@@ -181,11 +175,13 @@ let create_hf_input s =
   ] |> String.concat "\n\n"
   
 
-let create_cas_input system n_elec n_act =
-  "TODO"
+
+
+let create_cas_input system n_e n_a =
+ ""
 
 let create_input ~system = function
 | HF -> create_hf_input system
-| CAS (n_elec,n_act) -> create_cas_input system n_elec n_act
+| CAS (n_e,n_a) -> create_cas_input system n_e n_a
 
 
