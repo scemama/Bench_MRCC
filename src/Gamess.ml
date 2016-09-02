@@ -1,4 +1,59 @@
-(* DATA *)
+(** CONTRL *)
+type scftyp_t = RHF | ROHF | MCSCF
+let string_of_scftyp = function
+| RHF -> "RHF"
+| ROHF -> "ROHF"
+| MCSCF -> "MCSCF"
+
+type contrl =
+{ scftyp: scftyp_t ;
+  maxit: int;
+  ispher: int;
+  icharg: int;
+  mult: int;
+}
+
+let string_of_contrl c =
+  Printf.sprintf " $CONTRL
+   EXETYP=RUN COORD=UNIQUE  UNITS=ANGS
+   RUNTYP=ENERGY SCFTYP=%s CITYP=NONE
+   MAXIT=%d
+   ISPHER=%d
+   MULT=%d
+   ICHARG=%d
+ $END"
+ (string_of_scftyp c.scftyp)
+ c.maxit c.ispher c.mult c.icharg
+
+let make_contrl ?(maxit=100) ?(ispher=1) ~mult ~charge scftyp =
+  { scftyp ; maxit ; ispher ; mult ; icharg=charge }
+
+
+(** GUESS *)
+type guess_t =
+| HUCKEL
+| MOREAD of int
+
+let string_of_guess g =
+ [
+ " $GUESS\n" ; "  GUESS=" ; 
+ begin
+  match g with
+    | HUCKEL -> "HUCKEL\n"
+    | MOREAD norb -> Printf.sprintf "MOREAD\n  NORB=%d\n" norb
+ end
+ ; " $END"
+ ] |> String.concat ""
+
+
+(** BASIS *)
+let string_of_basis =
+  Printf.sprintf " $BASIS
+  GBASIS=%s
+ $END" 
+
+
+(** DATA *)
 type coord_t = 
 | Diatomic_homo of (Element.t*float)
 | Diatomic      of (Element.t*Element.t*float)
@@ -52,62 +107,9 @@ let string_of_data d =
   ]  ^ d.xyz ^ "\n $END"
     
   
-(* CONTRL *)
-type scftyp_t = RHF | ROHF | MCSCF
-let string_of_scftyp = function
-| RHF -> "RHF"
-| ROHF -> "ROHF"
-| MCSCF -> "MCSCF"
-
-type contrl =
-{ scftyp: scftyp_t ;
-  maxit: int;
-  ispher: int;
-  icharg: int;
-  mult: int;
-}
-
-let string_of_contrl c =
-  Printf.sprintf " $CONTRL
-   EXETYP=RUN COORD=UNIQUE  UNITS=ANGS
-   RUNTYP=ENERGY SCFTYP=%s CITYP=NONE
-   MAXIT=%d
-   ISPHER=%d
-   MULT=%d
-   ICHARG=%d
- $END"
- (string_of_scftyp c.scftyp)
- c.maxit c.ispher c.mult c.icharg
-
-let make_contrl ?(maxit=100) ?(ispher=1) ~mult ~charge scftyp =
-  { scftyp ; maxit ; ispher ; mult ; icharg=charge }
 
 
-(* GUESS *)
-type guess_t =
-| HUCKEL
-| MOREAD of int
-
-let string_of_guess g =
- [
- " $GUESS\n" ; "  GUESS=" ; 
- begin
-  match g with
-    | HUCKEL -> "HUCKEL\n"
-    | MOREAD norb -> Printf.sprintf "MOREAD\n  NORB=%d\n" norb
- end
- ; " $END"
- ] |> String.concat ""
-
-
-(* BASIS *)
-let string_of_basis =
-  Printf.sprintf " $BASIS
-  GBASIS=%s
- $END" 
-
-
-(* HF *)
+(** HF *)
 
 let rhf_input ~charge ~basis = 
   Printf.sprintf "
@@ -150,49 +152,6 @@ let rohf_input ~charge ~mult ~basis =
  $END
 
 " mult charge basis 
-
-
-(* MCSCF *)
-
-type cas = { n_elec : int ; n_orb : int }
-
-let mcscf_input ~charge ~mult ~basis ~cas ~n_orb_tot =
-
-  Printf.sprintf "
- $CONTRL
-   EXETYP= RUN COORD= UNIQUE  UNITS=ANGS
-   RUNTYP= ENERGY SCFTYP=MCSCF CITYP=NONE
-   MAXIT=200 ISPHER=1 QMTTOL=1.e-12
-   MULT= %d
-   ICHARG= %d
- $END
-
- $GUESS
-  GUESS=MOREAD
-  NORB=%d
- $END
-
- $BASIS
-  GBASIS=%s
- $END
-
- $TRANS DIRTRF=.FALSE. $END
-
- $MCSCF
-   FOCAS=.F.    SOSCF=.F.   FULLNR=.T.
-   CISTEP=GUGA EKT=.F. QUAD=.F. JACOBI=.f.
-   MAXIT=1000
- $END
-
-" mult charge n_orb_tot basis 
-
-
-let hf_input ?(charge=0) ?(mult=1) ~basis = 
-  match mult with
-  | 1 -> rhf_input ~charge ~basis
-  | mult -> rohf_input ~charge ~mult ~basis
-
-
 
 
 (* Computation *)
