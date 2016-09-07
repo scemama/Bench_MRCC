@@ -6,7 +6,7 @@ OCAMLCFLAGS="-g -warn-error A"
 OCAMLBUILD=ocamlbuild -j 0 -cflags $(OCAMLCFLAGS) -lflags $(OCAMLCFLAGS) 
 MLFILES=$(wildcard *.ml) 
 MLIFILES=$(wildcard *.mli) 
-ALL_EXE=create_gamess_input.native
+ALL_EXE=create_gamess_input.native test.byte
 
 .PHONY: executables default 
 

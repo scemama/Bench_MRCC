@@ -1,3 +1,3 @@
 let () = 
-  Bench_mrcc.run () 
+  Zmatrix.test ()
 
