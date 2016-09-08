@@ -158,7 +158,7 @@ let (|-) (x,y,z) (x',y',z') =
 let (|+) (x,y,z) (x',y',z') =
   ( x+.x', y+.y', z+.z' )
 
-let (|*) s (x,y,z) =
+let (|.) s (x,y,z) =
   ( s*.x, s*.y, s*.z )
 
 let dot (x,y,z) (x',y',z') =
@@ -168,7 +168,7 @@ let norm u =
   sqrt @@ dot u u
 
 let normalized u =
-  1. /. (norm u) |* u
+  1. /. (norm u) |. u
 
 let cross (x,y,z) (x',y',z') =
   ((y *. z' -. z *. y'), -. (x *. z' -. z *. x'), (x *. y' -. y *. x'))
@@ -181,7 +181,7 @@ let rotation_matrix axis angle =
       (cos (angle *. to_radian *. 0.5))
    in
    let (b, c, d) = 
-      (-. sin (angle *. to_radian *. 0.5)) |* (normalized axis)
+      (-. sin (angle *. to_radian *. 0.5)) |. (normalized axis)
    in
    Array.of_list @@ 
      [(a *. a +. b *. b -. c *. c -. d *. d,
@@ -211,13 +211,18 @@ let apply_rotation_matrix rot u =
   (dot rot.(0) u, dot rot.(1) u, dot rot.(2) u)
   
 let center_of_mass l =
-  let sum_mass =
-    Array.fold_left (fun x (y,_,_,_) -> x +. (Element.mass y)) 0. l
+let (x,y,z) =
+  let sum_mass, com =
+    Array.fold_left (fun (s,com) (e,x,y,z) ->
+      let mass =
+         Element.mass e
+      in
+      (s +. mass, ( mass |. (x,y,z) ) |+ com) ) 
+      (0., (0.,0.,0.)) l
   in
-  let rec work com = function
-  | [] -> 1. /. sum_mass |* com
-  | (e,x,y,z) :: rest  -> work (com |+ ((Element.mass e) |* (x,y,z))) rest
-  in work (0.,0.,0.) (Array.to_list l)
+  (1. /. sum_mass) |. com
+in
+Printf.printf "%f %f %f\n" x y z ; (x,y,z)
 
 let to_xyz (z,map) =
   let result =
@@ -239,7 +244,7 @@ let to_xyz (z,map) =
         let r =
           float_of_distance map r
         in
-        result.(i') <- Some (e, r, 0., 0.)
+        result.(i') <- Some (e, 0., 0., r)
     | Third  (e, i, r, j, a) -> 
       begin
         let i, r, j, a =
@@ -256,10 +261,10 @@ let to_xyz (z,map) =
           (uj |- ui)
         in
         let rot = 
-          rotation_matrix (0., 0., 1.) a
+          rotation_matrix (0., 1., 0.) a
         in
         let new_vec =
-          apply_rotation_matrix rot ( r |* (normalized u_ij))
+          apply_rotation_matrix rot ( r |. (normalized u_ij))
         in
         let (x, y, z) =
           new_vec |+ ui
@@ -288,7 +293,7 @@ let to_xyz (z,map) =
           cross u_ij u_kj
         in
         let new_vec = 
-          r |* (normalized u_ij)
+          r |. (normalized u_ij)
           |> apply_rotation_matrix (rotation_matrix normal a)
           |> apply_rotation_matrix (rotation_matrix u_ij d)
         in
@@ -305,13 +310,15 @@ let to_xyz (z,map) =
     | Some x -> x
     | None -> failwith "Some atoms were not defined" ) result
   in
-  let com =
-    center_of_mass result
-  in
-  Array.map (fun (e,x,y,z) -> 
-      let x',y',z' = (x,y,z) |- com in
-      (e,x',y',z') ) result
+  result
 
+
+let to_xyz_string (l,map) =
+  String.concat "\n" 
+    ( to_xyz (l,map) 
+      |> Array.map (fun (e,x,y,z) -> 
+        Printf.sprintf "%s %f %f %f\n" (Element.to_string e) x y z) 
+      |> Array.to_list )
 
 let test () =
   let text = "
@@ -333,5 +340,6 @@ coh 105.
   to_xyz l 
   |> Array.iter (fun (e,x,y,z) -> 
     Printf.printf "%s %f %f %f\n" (Element.to_string e) x y z) ;
+
 
 
