@@ -6,7 +6,7 @@ type t =
 | D4h
 
 let to_data = function
-| C1  -> "C1"
+| C1  -> "C1\n"
 | C2v -> "CNV 2\n\n"
 | C4v -> "CNV 4\n\n"
 | D2h -> "DNH 2\n\n"

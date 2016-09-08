@@ -114,6 +114,7 @@ type coord_t =
 | Atom          of Element.t
 | Diatomic_homo of (Element.t*float)
 | Diatomic      of (Element.t*Element.t*float)
+| Xyz           of (Element.t*float*float*float) list
 
 
 type data_t =
@@ -169,11 +170,22 @@ let data_of_diatomic ele1 ele2 r =
     nucl_charge = charge1 + charge2
   }
 
+let data_of_xyz l =
+  { sym   = Sym.C1 ;
+    title = "..." ;
+    xyz   = String.concat "\n" (
+      List.map (fun (e,x,y,z) -> Printf.sprintf "%s %f  %f %f %f"
+      (Element.to_string e) (Element.to_charge e)
+      x y z) l ) ;
+    nucl_charge = List.fold_left (fun accu (e,_,_,_) -> 
+      accu + (int_of_float @@ Element.to_charge e) ) 0 l
+  }
 
 let make_data = function
 | Atom          ele -> data_of_atom ele
 | Diatomic_homo (ele,r) -> data_of_diatomic_homo ele r
 | Diatomic      (ele1,ele2,r) -> data_of_diatomic ele1 ele2 r
+| Xyz           l -> data_of_xyz l
 
 let string_of_data d =
   String.concat "\n" [ " $DATA" ;

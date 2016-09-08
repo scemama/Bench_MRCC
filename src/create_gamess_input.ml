@@ -43,61 +43,64 @@ let set_type t =
       read_data := { !read_data with typ=Gamess.CAS(n_e,n_a) }
     end
  
-let set_geometry g =
-  match Str.split (Str.regexp ",") g with
-  | atom :: [] -> 
-    let ele = 
-      Element.of_string atom
-    in
-    read_data := { !read_data with coord= Some (Gamess.Atom ele) }
-  | atom :: r :: [] -> 
-    let atom = 
-      let l = 
-        (String.length atom)-1
-      in
-      if atom.[l] <> '2' then
-        failwith "Error in geometry";
-      String.sub atom 0 l
-    in
-    let ele = 
-      Element.of_string atom
-    and r =
-      float_of_string r
-    in
-    read_data := { !read_data with coord= Some (Gamess.Diatomic_homo (ele,r)) }
-  | atom1 :: atom2 :: r :: [] -> 
-    let ele1, ele2 = 
-      Element.of_string atom1,
-      Element.of_string atom2
-    and r =
-      float_of_string r
-    in
-    read_data := { !read_data with coord= Some (Gamess.Diatomic (ele1,ele2,r)) }
-  | _ -> failwith "Error in geometry"
- 
 let speclist = [
 ("-b", Arg.String (set_basis),         "Basis set [ CCD | CCT | ... ]");
 ("-c", Arg.Int    (set_charge),        "Charge of the system. Default: 0" );
 ("-m", Arg.Int    (set_multiplicity),  "Spin multiplicity"    );
 ("-t", Arg.String (set_type),          "Type of calculation [ HF | CAS(n_e,n_a) ]. Default: HF");
 ("-f", Arg.String (set_filename),      "Name of the .dat file containing the MOs. Default: None");
-("-g", Arg.String (set_geometry),      "Geometry.");
 
 ]
 
 let usage_msg = 
-  "Creates GAMESS input files.
+  "Creates GAMESS input file in standard output from a z-matrix given in the
+standard input.
 
-Examples:
-  -b CCT -g Li
-  -b CCD -g N2,1.15 -t \"CAS(6,6)\"
-  -b CCTC -g Li,H,1.00 -t \"CAS(2,2)\"
+Example:
 
+$ cat << EOF | create_gamess_input -b CCTC -t \"CAS(2,2)\" -f h2o.dat > h2o.inp
+h
+o 1 oh
+h 2 oh 1 angle
+
+oh 1.08
+angle 107.5
+EOF
 "
 
+let read_zmat () =
+  let rec read_stdin accu =
+      try
+        read_stdin ( (input_line stdin) :: accu )
+      with End_of_file ->
+        List.rev accu |> String.concat "\n"
+  in
+  let (zmat,map) = 
+    read_stdin []
+    |> Zmatrix.of_string
+  in
+  let geom = 
+    let open Zmatrix in 
+      begin
+        match (Array.to_list zmat) with
+        | First  e :: [] -> Gamess.Atom e
+        | First e1 :: Second (e2,r) :: [] -> 
+          begin
+            if (e1 = e2) then
+              Gamess.Diatomic_homo (e1, (float_of_distance map r) )
+            else
+              Gamess.Diatomic (e1, e2, (float_of_distance map r) )
+          end
+        | _ -> Gamess.Xyz (Zmatrix.to_xyz (zmat,map) )
+      end
+  in
+  read_data := { !read_data with coord=Some geom }
+
+        
 
 let run () =
   Arg.parse speclist print_endline usage_msg;
+  read_zmat ();
 
   let mult   = !read_data.mult
   and charge = !read_data.charge
