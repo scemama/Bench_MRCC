@@ -70,17 +70,17 @@ let read_mos guide filename =
   in
   String.sub text start (finish-start)
   
-let read_natural_mos =
+let read_natural_mos f =
   try
-    read_mos "--- NATURAL ORBITALS OF MCSCF ---"
+    read_mos "--- NATURAL ORBITALS OF MCSCF ---" f
   with Not_found ->
-    read_mos "MP2 NATURAL ORBITALS"
+    read_mos "MP2 NATURAL ORBITALS" f
   
-let read_canonical_mos =
+let read_canonical_mos f =
   try
-    read_mos "--- OPTIMIZED MCSCF MO-S ---"
+    read_mos "--- OPTIMIZED MCSCF MO-S ---" f
   with Not_found ->
-    read_mos "--- CLOSED SHELL ORBITALS ---"
+    read_mos "--- CLOSED SHELL ORBITALS ---" f
   
 let string_of_vec = function
 | Natural filename -> read_natural_mos filename
@@ -348,7 +348,14 @@ let create_cas_input ?(vecfile="") s n_e n_a =
     begin
       match vecfile with
       | "" ->     string_of_guess Huckel
-      | vecfile -> string_of_guess (Natural (n_elec_alpha, vecfile))
+      | vecfile -> 
+          let norb =
+            drt.nmcc + drt.ndoc + drt.nval + drt.nalp
+          in
+          try
+            string_of_guess (Natural (norb, vecfile))
+          with Not_found ->
+            string_of_guess (Canonical (norb, vecfile))
     end
   ;
     string_of_basis s.basis

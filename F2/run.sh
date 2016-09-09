@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/bin/bash 
 
 BASIS="CCD"
 METHOD="CAS(2,2)"
-DISTANCES="$(seq -w 0.90 0.05 3.00) $(seq 3.20 0.20 4.00) 4.50 8.00"
+#DISTANCES="$(seq -w 0.90 0.05 3.00) $(seq 3.20 0.20 4.00) 4.50 8.00"
+DISTANCES="$(seq -w 0.90 .5 3.00)"
+EQUILIBRIUM="1.40"
 GEOMETRY="
 F
 F  1  r
@@ -10,23 +12,32 @@ F  1  r
 
 source ../src/bench_mrcc.sh
 
-function initialization ()
+# How to update the variables of the Z-matrix
+function update_z_variables ()
 {
-  # Create Hartree-Fock at equilibrium distance
-  ZVARIABLES="r 1.41"
-  print_geometry | create_gamess_input -b $BASIS > hf.inp
-  run_gamess hf
-  cp hf.dat dat_file
-
-  # Run an MP2 to bring important MOs in the middle
+  ZVARIABLES="r $1"
 }
 
 
+# Initialization : the 1st set of MOs
+function initialization ()
+{
+  run_point ${EQUILIBRIUM} -t MP2 
+}
+
+
+# Initialization : what to do at each iteration
+function iteration ()
+{
+  run_point $1 -f $2 -t ${METHOD} 
+}
+
+
+# Execution
 initialization 
-for d in $DISTANCES
-do
-  ZVARIABLES="r $d"
-  create_gamess_input $d
-  
-done
+iteration $EQUILIBRIUM $EQUILIBRIUM.dat
+exit 0
+left_distance_loop 
+right_distance_loop 
+
 

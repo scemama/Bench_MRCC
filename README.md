@@ -16,6 +16,8 @@ variable ``X`` is not already defined, it will be defined by ``value``.
 * ``TMPDIR``     : Temporary directory for GAMESS calculations
 * ``ZVARIABLES`` : changing variables of the z-matrix
 * ``GEOMETRY``   : Z-matrix without definition of the changing variables
+* ``MULT``       : Spin multiplicity
+* ``CHARGE``     : Total charge
 
 ## Writing the script
 
