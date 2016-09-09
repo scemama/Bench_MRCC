@@ -1,13 +1,12 @@
 #!/bin/bash 
 
 BASIS="CCD"
-METHOD="CAS(2,2)"
-#DISTANCES="$(seq -w 0.90 0.05 3.00) $(seq 3.20 0.20 4.00) 4.50 8.00"
-DISTANCES="$(seq -w 0.90 .5 3.00)"
-EQUILIBRIUM="1.40"
+METHOD="CAS(6,6)"
+DISTANCES="$(seq -w 0.90 0.05 3.00) $(seq 3.20 0.20 4.00) 4.50 8.00"
+EQUILIBRIUM="1.10"
 GEOMETRY="
-F
-F  1  r
+N
+N  1  r
 "
 
 source ../src/bench_mrcc.sh
@@ -35,8 +34,6 @@ function iteration ()
 
 # Execution
 initialization 
-iteration $EQUILIBRIUM $EQUILIBRIUM.dat
-exit 0
 left_distance_loop 
 right_distance_loop 
 
