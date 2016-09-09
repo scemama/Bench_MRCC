@@ -1,0 +1,2 @@
+RUNGMS=${RUNGMS:-"rungms"}
+TMPDIR=${TMPDIR:-"/dev/shm"}

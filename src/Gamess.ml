@@ -1,9 +1,10 @@
 (** CONTRL *)
-type scftyp_t = RHF | ROHF | MCSCF
+type scftyp_t = RHF | ROHF | MCSCF | NONE
 let string_of_scftyp = function
 | RHF -> "RHF"
 | ROHF -> "ROHF"
 | MCSCF -> "MCSCF"
+| NONE  -> "NONE"
 
 type contrl =
 { scftyp: scftyp_t ;
@@ -11,6 +12,7 @@ type contrl =
   ispher: int;
   icharg: int;
   mult: int;
+  mplevl: int;
 }
 
 let string_of_contrl c =
@@ -21,12 +23,13 @@ let string_of_contrl c =
    ISPHER=%d
    MULT=%d
    ICHARG=%d
+   MPLEVL=%d
  $END"
  (string_of_scftyp c.scftyp)
- c.maxit c.ispher c.mult c.icharg
+ c.maxit c.ispher c.mult c.icharg c.mplevl
 
-let make_contrl ?(maxit=100) ?(ispher=1) ~mult ~charge scftyp =
-  { scftyp ; maxit ; ispher ; mult ; icharg=charge }
+let make_contrl ?(maxit=100) ?(ispher=1) ?(mplevl=0) ~mult ~charge scftyp =
+  { scftyp ; maxit ; ispher ; mult ; icharg=charge ; mplevl }
 
 
 (** Vec *)
@@ -68,7 +71,10 @@ let read_mos guide filename =
   String.sub text start (finish-start)
   
 let read_natural_mos =
-  read_mos "--- NATURAL ORBITALS OF MCSCF ---"
+  try
+    read_mos "--- NATURAL ORBITALS OF MCSCF ---"
+  with Not_found ->
+    read_mos "MP2 NATURAL ORBITALS"
   
 let read_canonical_mos =
   try
@@ -247,8 +253,14 @@ let string_of_drt drt sym =
  $END"
  drt.nmcc drt.ndoc drt.nalp drt.nval drt.istsym (Sym.to_string sym)
 
+(** MP2 *)
+let string_of_mp2 = " $MP2
+   MP2PRP=.TRUE.
+ $END"
+
+
 (** Computation *)
-type computation = HF | CAS of (int*int)
+type computation = HF | MP2 |  CAS of (int*int)
 
 type system =
 { mult: int ; charge: int ; basis: string ; coord: coord_t }
@@ -274,8 +286,7 @@ let n_elec_alpha_beta system =
   (alpha, beta)
 
   
-
-let create_hf_input ?(vecfile="") s =
+let create_single_det_input ~mp2 ?(vecfile="") s =
   let scftyp =
     match s.mult with
     | 1 -> RHF
@@ -284,9 +295,11 @@ let create_hf_input ?(vecfile="") s =
   and charge = s.charge
   and n_elec_alpha, _ = 
     n_elec_alpha_beta s
+  and mplevl =
+    if mp2 then 2 else 0
   in
   [
-    make_contrl ~mult ~charge scftyp
+    make_contrl ~mult ~charge ~mplevl scftyp
     |> string_of_contrl 
   ;
     begin
@@ -297,11 +310,21 @@ let create_hf_input ?(vecfile="") s =
   ;
     string_of_basis s.basis
   ;
+    if mp2 then
+      string_of_mp2
+    else
+      ""
+  ;
     make_data s.coord
     |> string_of_data
   ] |> String.concat "\n\n"
   
 
+let create_hf_input =
+  create_single_det_input ~mp2:false 
+
+let create_mp2_input =
+  create_single_det_input ~mp2:true
 
 
 let create_cas_input ?(vecfile="") s n_e n_a =
@@ -339,7 +362,8 @@ let create_cas_input ?(vecfile="") s n_e n_a =
   
 
 let create_input ?(vecfile="") ~system = function
-| HF -> create_hf_input ~vecfile system
+| HF   -> create_hf_input ~vecfile system
+| MP2  -> create_mp2_input ~vecfile system
 | CAS (n_e,n_a) -> create_cas_input ~vecfile system n_e n_a 
 
 

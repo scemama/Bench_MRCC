@@ -21,12 +21,14 @@ tests: $(ALL_TESTS)
 %.byte: $(MLFILES) $(MLIFILES)
 	rm -f -- $*
 	$(OCAMLBUILD) $*.byte  -use-ocamlfind  $(PKGS)
-	ln -s $*.byte $*
+	rm -f ../bin/$*
+	ln $*.byte ../bin/$*
 
 %.native: $(MLFILES) $(MLIFILES)
 	rm -f -- $*
 	$(OCAMLBUILD) $*.native -use-ocamlfind $(PKGS)
-	ln -s $*.native $*
+	rm -f ../bin/$*
+	ln $*.native ../bin/$*
 
 clean: 
 	rm -rf _build *.byte *.native $(ALL_EXE) $(ALL_TESTS)

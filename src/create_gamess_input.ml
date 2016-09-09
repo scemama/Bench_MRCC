@@ -30,7 +30,8 @@ let set_filename f =
 
 let set_type t =
   match t with 
-  | "hf" | "HF" -> read_data := { !read_data with typ=Gamess.HF }
+  | "hf"  | "HF" -> read_data := { !read_data with typ=Gamess.HF }
+  | "mp2" | "MP2" -> read_data := { !read_data with typ=Gamess.MP2 }
   | _ ->
     begin
       let re_cas =
