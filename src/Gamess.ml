@@ -245,7 +245,12 @@ let make_drt ?(istsym=1) n_elec_alpha n_elec_beta n_e n_act =
 
 let string_of_drt drt sym =
   Printf.sprintf " $DRT
-  NMCC=%d NDOC=%d NALP=%d NVAL=%d  NEXT=0 ISTSYM=%d
+  NMCC=%d
+  NDOC=%d
+  NALP=%d
+  NVAL=%d
+  NEXT=0
+  ISTSYM=%d
   FORS=.TRUE.
   GROUP=%s
   MXNINT= 600000

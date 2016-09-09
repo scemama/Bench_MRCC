@@ -1,0 +1,45 @@
+#!/bin/bash 
+
+while true
+do
+  case "$1" in
+    all)
+      $0 gamess ezfio out slurm
+      ;;
+    gamess)
+      $0 dat inp err
+      ;;
+    slurm)
+      rm -f -- slurm*
+      ;;
+    err)
+      rm -f -- *.err
+      ;;
+    out)
+      rm -f -- *.out
+      ;;
+    dat)
+      rm -f -- *.dat
+      ;;
+    inp)
+      rm -f -- *.inp
+      ;;
+    cassd)
+      rm -rf -- *.cassd *.cassd.out
+      ;;
+    fci)
+      rm -rf -- *.fci *.fci.out
+      ;;
+    ezfio)
+      for i in $(ls */.version 2> /dev/null)
+      do
+        rm -rf -- ${i%/*}
+      done
+      ;;
+    "")
+      rm -f -- *.F[01][0-9]
+      break
+      ;;
+   esac
+   shift
+done
