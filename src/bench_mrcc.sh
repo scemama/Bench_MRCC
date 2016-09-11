@@ -95,10 +95,10 @@ function run_cassd ()
   EZFIO=$d.cassd
   rm -rf $EZFIO
   cp -r $d $EZFIO
-  NMCC=$(grep NMCC $1.inp | cut -d '=' -f 2)
-  NDOC=$(grep NDOC $1.inp | cut -d '=' -f 2)
-  NALP=$(grep NALP $1.inp | cut -d '=' -f 2)
-  NVAL=$(grep NVAL $1.inp | cut -d '=' -f 2)
+  NMCC=$(grep NMCC $d.inp | cut -d '=' -f 2)
+  NDOC=$(grep NDOC $d.inp | cut -d '=' -f 2)
+  NALP=$(grep NALP $d.inp | cut -d '=' -f 2)
+  NVAL=$(grep NVAL $d.inp | cut -d '=' -f 2)
   NCORE=$(qp_set_frozen_core.py $EZFIO -q)
   MO_TOT_NUM=$(($(cat $EZFIO/mo_basis/mo_tot_num)))
   qp_edit -c $EZFIO
