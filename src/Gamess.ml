@@ -252,11 +252,11 @@ let string_of_drt drt sym =
   NEXT=0
   ISTSYM=%d
   FORS=.TRUE.
-  GROUP=%s
+  GROUP=C1
   MXNINT= 600000
   NPRT=2
  $END"
- drt.nmcc drt.ndoc drt.nalp drt.nval drt.istsym (Sym.to_string sym)
+ drt.nmcc drt.ndoc drt.nalp drt.nval drt.istsym 
 
 (** MP2 *)
 let string_of_mp2 = " $MP2
