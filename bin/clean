@@ -4,7 +4,7 @@ while true
 do
   case "$1" in
     all)
-      $0 gamess ezfio out slurm
+      $0 gamess ezfio out slurm mrcc cassd mrcepa mrsc2
       ;;
     gamess)
       $0 dat inp err
@@ -23,6 +23,15 @@ do
       ;;
     inp)
       rm -f -- *.inp
+      ;;
+    mrsc2)
+      rm -rf -- *.mrsc2 *.mrsc2.out
+      ;;
+    mrcepa)
+      rm -rf -- *.mrcepa *.mrcepa.out
+      ;;
+    mrcc)
+      rm -rf -- *.mrcc *.mrcc.out
       ;;
     cassd)
       rm -rf -- *.cassd *.cassd.out

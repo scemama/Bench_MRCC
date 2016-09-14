@@ -20,6 +20,9 @@ export TMPDIR
 [[ -z $MULT   ]] && MULT=1
 [[ -z $CHARGE ]] && CHARGE=0
 [[ -z $S2EIG  ]] && S2EIG=F
+[[ -z $NSTATES_DIAG ]] && NSTATES_DIAG=3
+[[ $NSTATES_DIAG -eq 1 ]] && [[ -z $THRESH_DAVIDSON ]] && THRESH_DAVIDSON=1.e-12
+[[ $NSTATES_DIAG -ne 1 ]] && [[ -z $THRESH_DAVIDSON ]] && THRESH_DAVIDSON=1.e-7
 
 OPTIONS="-b $BASIS -c $CHARGE -m $MULT"
 
@@ -79,6 +82,7 @@ function run_fci ()
   echo $NDETMAX > $EZFIO/determinants/n_det_max
   echo $GENERATORS > $EZFIO/determinants/threshold_generators
   echo $SELECTORS > $EZFIO/determinants/threshold_selectors
+  echo $THRESH_DAVIDSON > $EZFIO/determinants/threshold_davidson
   echo T > $EZFIO/perturbation/do_pt2_end
   qp_run save_natorb $EZFIO >> $EZFIO.out
   echo " [  FCI natorb  ] [ $FILE ]"
@@ -218,6 +222,10 @@ function convert_to_qp ()
   mkdir -p $1/mrcepa0
   qp_edit -c $1
   echo $S2EIG > $1/determinants/s2_eig
+  if [[ $S2EIG == 'T' ]]
+  then
+    echo $NSTATES_DIAG > $1/determinants/n_states_diag
+  fi
   echo 5.e-4 > $1/perturbation/pt2_max
 }
 
