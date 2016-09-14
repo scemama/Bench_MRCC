@@ -9,8 +9,8 @@ Max PT2 values:
 cc-pVDZ
 ~~~~~~~
 
-* CAS+SD : 1.1e-3
-* MRCCSD : 1.9e-4
-* FullCI : 1.5e-3
+* CAS+SD : 2.7e-5
+* MRCCSD : 4.0e-4
+* FullCI : 1.1e-2
 
 
