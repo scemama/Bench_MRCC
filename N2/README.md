@@ -4,8 +4,8 @@ N2, CAS(6,6)
 Full-CI, CAS+SD and MR-CCSD done with frozen core.
 Eigenfunction of S^2
 
-Max PT2 values:
----------------
+Max PT2 values
+--------------
 
 cc-pVDZ
 ~~~~~~~
