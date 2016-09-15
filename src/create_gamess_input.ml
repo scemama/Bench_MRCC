@@ -92,7 +92,7 @@ let read_zmat () =
             else
               Gamess.Diatomic (e1, e2, (float_of_distance map r) )
           end
-        | _ -> Gamess.Xyz (Zmatrix.to_xyz (zmat,map) )
+        | _ -> Gamess.Xyz (Zmatrix.to_xyz ~remove_dummy:true (zmat,map) )
       end
   in
   read_data := { !read_data with coord=Some geom }

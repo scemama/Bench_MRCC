@@ -106,7 +106,14 @@ function run_cassd ()
   NCORE=$(qp_set_frozen_core.py $EZFIO -q)
   MO_TOT_NUM=$(($(cat $EZFIO/mo_basis/mo_tot_num)))
   qp_edit -c $EZFIO
-  qp_set_mo_class $EZFIO -core "[1-$NCORE]" -inact "[$((NCORE+1))-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -virt "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+  if [[ $NCORE -eq 0 ]] 
+  then
+    echo qp_set_mo_class $EZFIO -inact "[1-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -virt "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+    qp_set_mo_class $EZFIO -inact "[1-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -virt "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+  else
+    echo qp_set_mo_class $EZFIO -core "[1-$NCORE]" -inact "[$((NCORE+1))-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -virt "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" 
+    qp_set_mo_class $EZFIO -core "[1-$NCORE]" -inact "[$((NCORE+1))-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -virt "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+  fi
   echo $NDETMAX > $EZFIO/determinants/n_det_max
   echo $GENERATORS > $EZFIO/determinants/threshold_generators
   echo $SELECTORS > $EZFIO/determinants/threshold_selectors

@@ -225,7 +225,7 @@ let (x,y,z) =
 in
 Printf.printf "%f %f %f\n" x y z ; (x,y,z)
 
-let to_xyz (z,map) =
+let to_xyz ?(remove_dummy=false) (z,map) =
   let result =
     Array.make (Array.length z) None
   in 
@@ -311,7 +311,11 @@ let to_xyz (z,map) =
     | Some x -> x
     | None -> failwith "Some atoms were not defined" ) result
   in
-  Array.to_list result
+  if (remove_dummy) then
+    Array.to_list result
+    |> List.filter (fun (x,_,_,_) -> x <> Element.X)
+  else
+    Array.to_list result
 
 
 let to_xyz_string (l,map) =
