@@ -10,8 +10,8 @@ cc-pVDZ
 ~~~~~~~
 
 
-* CAS+SD : 
-* MRCCSD : 
-* FullCI : 
+* CAS+SD : 8.0e-5
+* MRCCSD : 3.1e-4
+* FullCI : 1.8e-4
 
 
