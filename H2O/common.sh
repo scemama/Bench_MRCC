@@ -5,7 +5,7 @@ BASIS="CCD"
 METHOD="CAS(4,4)"
 DISTANCES="$(seq -w 0.90 0.05 3.0) "
 EQUILIBRIUM="1.20"
-S2EIG=T
+S2EIG="T"
 GEOMETRY="
 o 
 h 1 d 
@@ -20,4 +20,8 @@ function update_z_variables ()
   ZVARIABLES="d  $1"
 }
 
+function initialization ()
+{
+  run_point ${EQUILIBRIUM} -t MP2 
+}
 

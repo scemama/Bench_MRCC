@@ -142,6 +142,48 @@ function run_mrcc ()
   qp_run mrcc $EZFIO > $EZFIO.out
 }
 
+function run_mrsc2 ()
+{
+  d=$1                   ; shift
+  LAMBDA=${1:-0}         ; shift
+  GENERATORS=${1:-0.999} ; shift
+  SELECTORS=${1:-0.9999} ; shift
+  NDETMAX=${1:-524288}   ; shift
+
+  EZFIO=$d.mrsc2
+  rm -rf $EZFIO
+  cp -r $d.cassd $EZFIO
+  echo T > $EZFIO/determinants/read_wf
+  echo T > $EZFIO/perturbation/do_pt2_end
+  echo $LAMBDA > $EZFIO/mrcepa0/lambda_type
+  echo $NDETMAX > $EZFIO/determinants/n_det_max
+  echo $GENERATORS > $EZFIO/determinants/threshold_generators
+  echo $SELECTORS > $EZFIO/determinants/threshold_selectors
+  echo " [    MRSC2     ] [ $FILE ]"
+  qp_run mrsc2 $EZFIO > $EZFIO.out
+}
+
+function run_mrcepa ()
+{
+  d=$1                   ; shift
+  LAMBDA=${1:-0}         ; shift
+  GENERATORS=${1:-0.999} ; shift
+  SELECTORS=${1:-0.9999} ; shift
+  NDETMAX=${1:-524288}   ; shift
+
+  EZFIO=$d.mrcepa
+  rm -rf $EZFIO
+  cp -r $d.cassd $EZFIO
+  echo T > $EZFIO/determinants/read_wf
+  echo T > $EZFIO/perturbation/do_pt2_end
+  echo $LAMBDA > $EZFIO/mrcepa0/lambda_type
+  echo $NDETMAX > $EZFIO/determinants/n_det_max
+  echo $GENERATORS > $EZFIO/determinants/threshold_generators
+  echo $SELECTORS > $EZFIO/determinants/threshold_selectors
+  echo " [    MRCEPA    ] [ $FILE ]"
+  qp_run mrcepa $EZFIO > $EZFIO.out
+}
+
 function reorder_distances ()
 {
   EQ=$1
@@ -271,5 +313,40 @@ function grep_MRCC_energy ()
   echo " [    MRCCSD    ] [ $LINE ]"
   echo $LINE >> data_MRCC
   sort_file data_MRCC
+}
+
+function grep_MRCEPA_energy ()
+{
+  EZFIO=$1.mrcepa
+  E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | awk '// { print   $3  }')
+  LINE=$(printf "%s  %16.10f\n" $1 $E)
+  echo " [    MRCEPA    ] [ $LINE ]"
+  echo $LINE >> data_MRCEPA
+  sort_file data_MRCEPA
+}
+
+function grep_MRSC2_energy ()
+{
+  EZFIO=$1.mrsc2
+  E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | awk '// { print   $3  }')
+  LINE=$(printf "%s  %16.10f\n" $1 $E)
+  echo " [    MRSC2     ] [ $LINE ]"
+  echo $LINE >> data_MRSC2
+  sort_file data_MRSC2
+}
+
+
+
+# Force crash if the follownig functions are not defined
+function update_z_variables ()
+{
+  echo update_z_variables function is not defined
+  exit -1
+}
+
+function initialization ()
+{
+  echo initialization function is not defined
+  exit -1
 }
 

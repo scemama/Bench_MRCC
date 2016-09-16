@@ -30,3 +30,8 @@ function update_z_variables ()
 }
 
 
+function initialization ()
+{
+  run_point ${EQUILIBRIUM} -t MP2 
+}
+

@@ -23,4 +23,7 @@ function update_z_variables ()
   ZVARIABLES=$(python -c "print \"z  %f\nx  %f\"%( (2.54-0.46*${1})*0.529177249, ${1}*0.529177249+1.e-6)")
 }
 
-
+function initialization ()
+{
+  run_point ${EQUILIBRIUM} -t MP2 
+}

@@ -18,7 +18,7 @@ function iteration ()
 
 rm -f data_CAS
 
-run_point ${EQUILIBRIUM} -t MP2 
+initialization
 iteration ${EQUILIBRIUM} ${EQUILIBRIUM}.dat 
 
 left_distance_loop 

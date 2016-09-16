@@ -27,4 +27,7 @@ function update_z_variables ()
   ZVARIABLES="dih  $1"
 }
 
-
+function initialization ()
+{
+  run_point ${EQUILIBRIUM} -t MP2 
+}
