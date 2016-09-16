@@ -25,16 +25,33 @@ for basis in data:
   keys = sorted(data[basis]['FCI'].keys())
   methods = sorted(filter(lambda x: x != "FCI", data[basis].keys()))
   with open(file,'w') as f:
+    sum_ = {}
+    minmax  = {}
+    for m in methods:
+      sum_[m] = 0.
+      minmax[m] = (1.e30,-1.e30)
     line = "#%-7s "%"R"
     for m in methods:
-      line += " %-16s"%m
+      line += " %16s"%m
     print >>f, line
     for x in keys:
       line = "%-8f "%x
       EFCI = data[basis]['FCI'][x]
       for m in methods:
-        line += " %-16s"%(data[basis][m][x]-EFCI)
+        delta_E = data[basis][m][x]-EFCI
+        line += " %16f"%delta_E
+        sum_[m] += delta_E
+        minold, maxold = minmax[m]
+        minmax[m] = (min(minold,delta_E), max(maxold,delta_E))
       print >>f, line
+    line = "#Average " 
+    for m in methods:
+      line += " %16f"%(sum_[m]/len(keys))
+    print >>f, line
+    line = "#NPE     " 
+    for m in methods:
+      line += " %16f"%(minmax[m][1]-minmax[m][0])
+    print >>f, line
 
 
 for basis in data:

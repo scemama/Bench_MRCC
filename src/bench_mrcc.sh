@@ -181,7 +181,7 @@ function run_mrcepa ()
   echo $GENERATORS > $EZFIO/determinants/threshold_generators
   echo $SELECTORS > $EZFIO/determinants/threshold_selectors
   echo " [    MRCEPA    ] [ $FILE ]"
-  qp_run mrcepa $EZFIO > $EZFIO.out
+  qp_run mrcepa0 $EZFIO > $EZFIO.out
 }
 
 function reorder_distances ()
