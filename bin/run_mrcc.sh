@@ -1,5 +1,10 @@
 #!/bin/bash 
 
+LAMBDA=0
+GENERATORS=0.999
+SELECTORS=0.9999
+NDETMAX=524288
+
 source common.sh
 
 function iteration ()
@@ -8,7 +13,8 @@ function iteration ()
 #!/bin/bash
 source common.sh
 
-run_mrcc $1
+
+run_mrcc $1 $LAMBDA $GENERATORS $SELECTORS $NDETMAX
 grep_MRCC_energy $1 
 
 EOF

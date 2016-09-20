@@ -1,5 +1,9 @@
 #!/bin/bash 
 
+GENERATORS=0.999
+SELECTORS=0.9999
+NDETMAX=524288
+
 source common.sh
 
 function iteration ()
@@ -8,7 +12,7 @@ function iteration ()
 #!/bin/bash
 source common.sh
 
-run_cassd $1
+run_cassd $1 $GENERATORS $SELECTORS $NDETMAX
 grep_CASSD_energy $1 
 
 EOF
