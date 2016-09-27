@@ -70,17 +70,39 @@ let read_mos guide filename =
   in
   String.sub text start (finish-start)
   
+let read_until_found f tries =
+  let result = 
+    List.fold_left (fun accu x ->
+      match accu with
+      | Some mos -> Some mos
+      | None ->
+        begin 
+          try
+            Some (read_mos x f)
+          with Not_found ->
+            None
+        end
+        ) None tries 
+  in
+  match result with
+  | Some mos -> mos
+  | None -> raise Not_found
+
 let read_natural_mos f =
-  try
-    read_mos "--- NATURAL ORBITALS OF MCSCF ---" f
-  with Not_found ->
-    read_mos "MP2 NATURAL ORBITALS" f
+  let tries = [
+    "--- NATURAL ORBITALS OF MCSCF ---" ;
+    "MP2 NATURAL ORBITALS" ]
+  in
+  read_until_found f tries
   
 let read_canonical_mos f =
-  try
-    read_mos "--- OPTIMIZED MCSCF MO-S ---" f
-  with Not_found ->
-    read_mos "--- CLOSED SHELL ORBITALS ---" f
+  let tries = [
+    "--- OPTIMIZED MCSCF MO-S ---"  ;
+    "--- CLOSED SHELL ORBITALS ---" ;
+    "--- OPEN SHELL ORBITALS ---"
+    ]
+  in
+  read_until_found f tries
   
 let string_of_vec = function
 | Natural filename -> read_natural_mos filename

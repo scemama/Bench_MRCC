@@ -58,9 +58,8 @@ function run_gamess ()
   
   echo " [    GAMESS    ] [ $FILE ]"
   rm -f $TMPDIR/${FILE}.*
-  $RUNGMS $FILE > $FILE.out 2> $FILE.err
+  $RUNGMS $FILE > $FILE.out 2> $FILE.err && rm -rf $FILE.err
   [[ -f $TMPDIR/$FILE.dat ]] && mv $TMPDIR/$FILE.dat .
-  rm -rf $FILE.err
 }
 
 function run_fci ()
@@ -254,7 +253,7 @@ function run_point ()
   d=$1
   shift
   update_z_variables $d
-  print_geometry | create_gamess_input $OPTIONS $@ > $d.inp
+  print_geometry | create_gamess_input $OPTIONS $@ > ${d}.inp
   run_gamess $d
 }
 
