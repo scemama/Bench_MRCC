@@ -20,9 +20,10 @@ export TMPDIR
 [[ -z $MULT   ]] && MULT=1
 [[ -z $CHARGE ]] && CHARGE=0
 [[ -z $S2EIG  ]] && S2EIG=F
-[[ -z $NSTATES_DIAG ]] && NSTATES_DIAG=3
-[[ $NSTATES_DIAG -eq 1 ]] && [[ -z $THRESH_DAVIDSON ]] && THRESH_DAVIDSON=1.e-12
-[[ $NSTATES_DIAG -ne 1 ]] && [[ -z $THRESH_DAVIDSON ]] && THRESH_DAVIDSON=1.e-7
+[[ -z $PT2MAX ]] && PT2MAX=5.e-4
+[[ -z $NSTATES_DIAG ]] && NSTATES_DIAG=10
+[[ -z $THRESH_DAVIDSON ]] && THRESH_DAVIDSON=1.e-12
+[[ -z $LAMBDA ]] && LAMBDA=0
 
 OPTIONS="-b $BASIS -c $CHARGE -m $MULT"
 
@@ -62,6 +63,21 @@ function run_gamess ()
   [[ -f $TMPDIR/$FILE.dat ]] && mv $TMPDIR/$FILE.dat .
 }
 
+
+function init_qp()
+{
+  d=$1
+  set -x
+  echo $S2EIG > $d/determinants/s2_eig
+  echo $NSTATES_DIAG > $d/davidson/n_states_diag
+  echo $PT2MAX > $d/perturbation/pt2_max
+  echo $NDETMAX > $d/determinants/n_det_max
+  echo $GENERATORS > $d/determinants/threshold_generators
+  echo $SELECTORS > $d/determinants/threshold_selectors
+  echo $THRESH_DAVIDSON > $d/davidson/threshold_davidson
+  echo $LAMBDA > $d/mrcepa0/lambda_type
+  set +x
+}
 function run_fci ()
 {
   d=$1                   ; shift
@@ -74,14 +90,10 @@ function run_fci ()
   cp -r $d $EZFIO
   qp_edit -c $EZFIO
   qp_set_frozen_core.py $EZFIO > /dev/null
-  echo $NDETMAX > $EZFIO/determinants/n_det_max
+  init_qp $EZFIO
   echo F > $EZFIO/perturbation/do_pt2_end
   echo " [  FCI canon   ] [ $FILE ]"
   qp_run fci_zmq $EZFIO > $EZFIO.out
-  echo $NDETMAX > $EZFIO/determinants/n_det_max
-  echo $GENERATORS > $EZFIO/determinants/threshold_generators
-  echo $SELECTORS > $EZFIO/determinants/threshold_selectors
-  echo $THRESH_DAVIDSON > $EZFIO/determinants/threshold_davidson
   echo T > $EZFIO/perturbation/do_pt2_end
   qp_run save_natorb $EZFIO >> $EZFIO.out
   echo " [  FCI natorb  ] [ $FILE ]"
@@ -113,9 +125,7 @@ function run_cassd ()
     echo qp_set_mo_class $EZFIO -core "[1-$NCORE]" -inact "[$((NCORE+1))-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -virt "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" 
     qp_set_mo_class $EZFIO -core "[1-$NCORE]" -inact "[$((NCORE+1))-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -virt "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
   fi
-  echo $NDETMAX > $EZFIO/determinants/n_det_max
-  echo $GENERATORS > $EZFIO/determinants/threshold_generators
-  echo $SELECTORS > $EZFIO/determinants/threshold_selectors
+  init_qp $EZFIO
   echo " [    CAS+SD    ] [ $FILE ]"
   qp_run cas_sd_selected $EZFIO > $EZFIO.out
 }
@@ -133,10 +143,7 @@ function run_mrcc ()
   cp -r $d.cassd $EZFIO
   echo T > $EZFIO/determinants/read_wf
   echo T > $EZFIO/perturbation/do_pt2_end
-  echo $LAMBDA > $EZFIO/mrcepa0/lambda_type
-  echo $NDETMAX > $EZFIO/determinants/n_det_max
-  echo $GENERATORS > $EZFIO/determinants/threshold_generators
-  echo $SELECTORS > $EZFIO/determinants/threshold_selectors
+  init_qp $EZFIO
   echo " [    MRCCSD    ] [ $FILE ]"
   qp_run mrcc $EZFIO > $EZFIO.out
 }
@@ -154,10 +161,7 @@ function run_mrsc2 ()
   cp -r $d.cassd $EZFIO
   echo T > $EZFIO/determinants/read_wf
   echo T > $EZFIO/perturbation/do_pt2_end
-  echo $LAMBDA > $EZFIO/mrcepa0/lambda_type
-  echo $NDETMAX > $EZFIO/determinants/n_det_max
-  echo $GENERATORS > $EZFIO/determinants/threshold_generators
-  echo $SELECTORS > $EZFIO/determinants/threshold_selectors
+  init_qp $EZFIO
   echo " [    MRSC2     ] [ $FILE ]"
   qp_run mrsc2 $EZFIO > $EZFIO.out
 }
@@ -175,10 +179,7 @@ function run_mrcepa ()
   cp -r $d.cassd $EZFIO
   echo T > $EZFIO/determinants/read_wf
   echo T > $EZFIO/perturbation/do_pt2_end
-  echo $LAMBDA > $EZFIO/mrcepa0/lambda_type
-  echo $NDETMAX > $EZFIO/determinants/n_det_max
-  echo $GENERATORS > $EZFIO/determinants/threshold_generators
-  echo $SELECTORS > $EZFIO/determinants/threshold_selectors
+  init_qp $EZFIO
   echo " [    MRCEPA    ] [ $FILE ]"
   qp_run mrcepa0 $EZFIO > $EZFIO.out
 }
@@ -267,14 +268,8 @@ function convert_to_qp ()
 {
   echo " [  QP_CONVERT  ] [ $1 ]"
   qp_convert_output_to_ezfio.py ${1}.out --ezfio=$1
-  mkdir -p $1/mrcepa0
   qp_edit -c $1
-  echo $S2EIG > $1/determinants/s2_eig
-  if [[ $S2EIG == 'T' ]]
-  then
-    echo $NSTATES_DIAG > $1/determinants/n_states_diag
-  fi
-  echo 5.e-4 > $1/perturbation/pt2_max
+  init_qp $1
 }
 
 function grep_CAS_energy ()

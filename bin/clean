@@ -39,6 +39,10 @@ do
     fci)
       rm -rf -- *.fci *.fci.out
       ;;
+    qp)
+      source common.sh
+      rm -rf -- ${DISTANCES}
+      ;;
     ezfio)
       for i in $(ls */.version 2> /dev/null)
       do
