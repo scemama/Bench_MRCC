@@ -8,7 +8,7 @@ NDETMAX=524288
 
 function iteration ()
 {
-  cat << EOF | sbatch -J $1.fci $SBATCH_ARGS  $WAI $WAIT
+  cat << EOF | sbatch -J $1.fci $SBATCH_ARGS $WAIT
 #!/bin/bash
 source common.sh
 

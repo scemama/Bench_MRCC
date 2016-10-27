@@ -21,6 +21,7 @@ export TMPDIR
 [[ -z $CHARGE ]] && CHARGE=0
 [[ -z $S2EIG  ]] && S2EIG=F
 [[ -z $PT2MAX ]] && PT2MAX=5.e-4
+[[ -z $NSTATES ]] && NSTATES=1
 [[ -z $NSTATES_DIAG ]] && NSTATES_DIAG=10
 [[ -z $THRESH_DAVIDSON ]] && THRESH_DAVIDSON=1.e-12
 [[ -z $LAMBDA ]] && LAMBDA=0
@@ -67,8 +68,9 @@ function run_gamess ()
 function init_qp()
 {
   d=$1
-  set -x
+  qp_edit -c $d
   echo $S2EIG > $d/determinants/s2_eig
+  echo $NSTATES > $d/determinants/n_states
   echo $NSTATES_DIAG > $d/davidson/n_states_diag
   echo $PT2MAX > $d/perturbation/pt2_max
   echo $NDETMAX > $d/determinants/n_det_max
@@ -76,8 +78,8 @@ function init_qp()
   echo $SELECTORS > $d/determinants/threshold_selectors
   echo $THRESH_DAVIDSON > $d/davidson/threshold_davidson
   echo $LAMBDA > $d/mrcepa0/lambda_type
-  set +x
 }
+
 function run_fci ()
 {
   d=$1                   ; shift
@@ -88,16 +90,17 @@ function run_fci ()
   EZFIO=$d.fci
   rm -rf $EZFIO
   cp -r $d $EZFIO
-  qp_edit -c $EZFIO
-  qp_set_frozen_core.py $EZFIO > /dev/null
   init_qp $EZFIO
   echo F > $EZFIO/perturbation/do_pt2_end
   echo " [  FCI canon   ] [ $FILE ]"
-  qp_run fci_zmq $EZFIO > $EZFIO.out
+#  qp_run fci_zmq $EZFIO > $EZFIO.out
+#  qp_run full_ci $EZFIO > $EZFIO.out
+#  qp_run save_natorb $EZFIO >> $EZFIO.out
+#  echo " [  FCI natorb  ] [ $FILE ]"
+#  init_qp $EZFIO
   echo T > $EZFIO/perturbation/do_pt2_end
-  qp_run save_natorb $EZFIO >> $EZFIO.out
-  echo " [  FCI natorb  ] [ $FILE ]"
   qp_run fci_zmq $EZFIO >> $EZFIO.out
+#  qp_run full_ci $EZFIO >> $EZFIO.out
 }
 
 function run_cassd ()
@@ -126,8 +129,9 @@ function run_cassd ()
     qp_set_mo_class $EZFIO -core "[1-$NCORE]" -inact "[$((NCORE+1))-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -virt "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
   fi
   init_qp $EZFIO
-  echo " [    CAS+SD    ] [ $FILE ]"
+  echo " [    CAS+SD    ] [ $EZFIO ]"
   qp_run cas_sd_selected $EZFIO > $EZFIO.out
+#  qp_run cas_sd $EZFIO > $EZFIO.out
 }
 
 function run_mrcc ()
@@ -144,7 +148,7 @@ function run_mrcc ()
   echo T > $EZFIO/determinants/read_wf
   echo T > $EZFIO/perturbation/do_pt2_end
   init_qp $EZFIO
-  echo " [    MRCCSD    ] [ $FILE ]"
+  echo " [    MRCCSD    ] [ $EZFIO ]"
   qp_run mrcc $EZFIO > $EZFIO.out
 }
 
@@ -162,7 +166,7 @@ function run_mrsc2 ()
   echo T > $EZFIO/determinants/read_wf
   echo T > $EZFIO/perturbation/do_pt2_end
   init_qp $EZFIO
-  echo " [    MRSC2     ] [ $FILE ]"
+  echo " [    MRSC2     ] [ $EZFIO ]"
   qp_run mrsc2 $EZFIO > $EZFIO.out
 }
 
@@ -268,6 +272,7 @@ function convert_to_qp ()
 {
   echo " [  QP_CONVERT  ] [ $1 ]"
   qp_convert_output_to_ezfio.py ${1}.out --ezfio=$1
+  qp_set_frozen_core.py $1 > /dev/null
   qp_edit -c $1
   init_qp $1
 }
