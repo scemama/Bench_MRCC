@@ -4,7 +4,7 @@ source common.sh
 
 GENERATORS=0.999
 SELECTORS=0.9999
-NDETMAX=524288
+NDETMAX=1048576
 
 function iteration ()
 {
