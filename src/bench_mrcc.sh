@@ -86,21 +86,22 @@ function run_fci ()
   GENERATORS=${1:-0.999} ; shift
   SELECTORS=${1:-0.9999} ; shift
   NDETMAX=${1:-524288}   ; shift
+  NDETMAX_IN=$NDETMAX
 
   EZFIO=$d.fci
   rm -rf $EZFIO
   cp -r $d $EZFIO
+  qp_set_frozen_core.py $EZFIO > /dev/null
+  NDETMAX=262144
   init_qp $EZFIO
   echo F > $EZFIO/perturbation/do_pt2_end
-  echo " [  FCI canon   ] [ $FILE ]"
-#  qp_run fci_zmq $EZFIO > $EZFIO.out
-#  qp_run full_ci $EZFIO > $EZFIO.out
-#  qp_run save_natorb $EZFIO >> $EZFIO.out
-#  echo " [  FCI natorb  ] [ $FILE ]"
-#  init_qp $EZFIO
+  qp_run fci_zmq $EZFIO > $EZFIO.out
+  qp_run save_natorb $EZFIO >> $EZFIO.out
+  echo " [  FCI natorb  ] [ $FILE ]"
+  NDETMAX=$NDETMAX_IN
+  init_qp $EZFIO
   echo T > $EZFIO/perturbation/do_pt2_end
   qp_run fci_zmq $EZFIO >> $EZFIO.out
-#  qp_run full_ci $EZFIO >> $EZFIO.out
 }
 
 function run_cassd ()
