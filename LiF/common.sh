@@ -3,7 +3,7 @@
 SBATCH_ARGS="-n 1 -N 1 --exclusive -p xeonv4,xeonv3"
 BASIS="CCD"
 METHOD="CAS(2,2)"
-DISTANCES="$(seq 2.00 0.10 6.00) 7.00 8.00 9.00 10.00"
+DISTANCES="$(seq 2.00 0.10 8.00)"
 EQUILIBRIUM="4.00"
 S2EIG="T"
 NSTATES=2

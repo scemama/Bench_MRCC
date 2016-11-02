@@ -323,10 +323,23 @@ function grep_CAS_energy ()
   sort_file data_CAS
 }
 
+function get_energy ()
+{
+  if [[ $NSTATES == 1 ]] 
+  then
+    E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | awk '// { print   $3}')
+    LINE=$(printf "%s  %16.10f\n" $1 $E)
+  else
+    E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | cut -d '=' -f 2)
+    LINE=$(printf "%s  %s\n" $1 "$E")
+  fi
+}
+
+
 function grep_FCI_energy ()
 {
   EZFIO=$1.fci
-  LINE=$(printf "%s  %16.10f\n" $1  $(cat $EZFIO/full_ci/energy_pt2))
+  get_energy  $1
   echo " [      FCI     ] [ $LINE ]"
   echo $LINE >> data_FCI
   sort_file data_FCI
@@ -335,8 +348,7 @@ function grep_FCI_energy ()
 function grep_CAS_QP_energy ()
 {
   EZFIO=$1.cas
-  E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | awk '// { print   $3  }')
-  LINE=$(printf "%s  %16.10f\n" $1 $E)
+  get_energy  $1
   echo " [    CAS       ] [ $LINE ]"
   echo $LINE >> data_CAS_QP
   sort_file data_CAS_QP
@@ -345,8 +357,7 @@ function grep_CAS_QP_energy ()
 function grep_CASSD_energy ()
 {
   EZFIO=$1.cassd
-  E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | awk '// { print   $3  }')
-  LINE=$(printf "%s  %16.10f\n" $1 $E)
+  get_energy  $1
   echo " [    CAS+SD    ] [ $LINE ]"
   echo $LINE >> data_CASSD
   sort_file data_CASSD
@@ -355,8 +366,7 @@ function grep_CASSD_energy ()
 function grep_MRCC_energy ()
 {
   EZFIO=$1.mrcc
-  E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | awk '// { print   $3  }')
-  LINE=$(printf "%s  %16.10f\n" $1 $E)
+  get_energy  $1
   echo " [    MRCCSD    ] [ $LINE ]"
   echo $LINE >> data_MRCC
   sort_file data_MRCC
@@ -365,8 +375,7 @@ function grep_MRCC_energy ()
 function grep_MRCEPA_energy ()
 {
   EZFIO=$1.mrcepa
-  E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | awk '// { print   $3  }')
-  LINE=$(printf "%s  %16.10f\n" $1 $E)
+  get_energy  $1
   echo " [    MRCEPA    ] [ $LINE ]"
   echo $LINE >> data_MRCEPA
   sort_file data_MRCEPA
@@ -375,8 +384,7 @@ function grep_MRCEPA_energy ()
 function grep_MRSC2_energy ()
 {
   EZFIO=$1.mrsc2
-  E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | awk '// { print   $3  }')
-  LINE=$(printf "%s  %16.10f\n" $1 $E)
+  get_energy  $1
   echo " [    MRSC2     ] [ $LINE ]"
   echo $LINE >> data_MRSC2
   sort_file data_MRSC2

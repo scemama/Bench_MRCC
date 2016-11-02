@@ -5,6 +5,7 @@ BASIS="CCD"
 METHOD="CAS(2,2)"
 DISTANCES="$(seq -w 0.0 0.2 4.0) "
 EQUILIBRIUM="4.0"
+LAMBDA=0
 GEOMETRY="
 be
 x    1 z
@@ -25,5 +26,7 @@ function update_z_variables ()
 
 function initialization ()
 {
-  run_point ${EQUILIBRIUM} -t MP2 
+  run_point ${EQUILIBRIUM} -t MP2
 }
+
+
