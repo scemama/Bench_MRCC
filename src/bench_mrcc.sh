@@ -25,8 +25,9 @@ export TMPDIR
 [[ -z $NSTATES_DIAG ]] && NSTATES_DIAG=10
 [[ -z $THRESH_DAVIDSON ]] && THRESH_DAVIDSON=1.e-12
 [[ -z $LAMBDA ]] && LAMBDA=0
+[[ -z $NSTATES ]] && NSTATES=1
 
-OPTIONS="-b $BASIS -c $CHARGE -m $MULT"
+OPTIONS="-b $BASIS -c $CHARGE -m $MULT -s $NSTATES"
 
 # =============
 

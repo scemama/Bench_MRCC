@@ -222,6 +222,46 @@ let string_of_data d =
   ]  ^ d.xyz ^ "\n $END"
     
 
+(** GUGDM *)
+type gugdm2_t = int
+
+let string_of_gugdm2 = function
+| 1 -> ""
+| i when i<1 -> raise (Invalid_argument "Nstates must be > 0")
+| i ->
+  let s =
+    Array.make i "1."
+    |> Array.to_list
+    |> String.concat ","
+  in
+  Printf.sprintf "
+ $GUGDM2
+   WSTATE(1)=%s
+ $END
+" s
+
+
+type gugdia_t = 
+{ nstate : int ;
+  itermx : int ;
+}
+
+let string_of_gugdia g =
+  Printf.sprintf "
+ $GUGDIA
+  PRTTOL=0.0001
+  NSTATE=%d
+  ITERMX=%d
+ $END
+" g.nstate g.itermx
+
+
+let make_gugdia ?(itermx=500) nstate =
+  assert (nstate > 0);
+  assert (itermx > 1);
+  { nstate ; itermx }
+
+
 (** MCSCF *)
 type mcscf_t = FULLNR | SOSCF | FOCAS
 
@@ -354,7 +394,7 @@ let create_mp2_input =
   create_single_det_input ~mp2:true
 
 
-let create_cas_input ?(vecfile="") s n_e n_a =
+let create_cas_input ?(vecfile="") ~nstate s n_e n_a =
   let scftyp = MCSCF
   and mult = s.mult
   and charge = s.charge
@@ -391,13 +431,18 @@ let create_cas_input ?(vecfile="") s n_e n_a =
   ;
     string_of_drt drt data.sym
   ;
+    make_gugdia nstate
+    |> string_of_gugdia  
+  ;
+    string_of_gugdm2 nstate
+  ;
     string_of_data data
   ] |> String.concat "\n\n"
   
 
-let create_input ?(vecfile="") ~system = function
+let create_input ?(vecfile="") ~system ~nstate = function
 | HF   -> create_hf_input ~vecfile system
 | MP2  -> create_mp2_input ~vecfile system
-| CAS (n_e,n_a) -> create_cas_input ~vecfile system n_e n_a 
+| CAS (n_e,n_a) -> create_cas_input ~vecfile ~nstate system n_e n_a 
 
 

@@ -5,6 +5,7 @@ type read_data_t =
   basis : string option;
   filename: string option;
   coord: Gamess.coord_t option;
+  nstate: int;
 }
 
 let read_data = ref {
@@ -14,7 +15,11 @@ let read_data = ref {
   filename = None;
   basis = None;
   coord = None;
+  nstate = 1;
 }
+
+let set_nstate n = 
+  read_data := { !read_data with nstate=n }
 
 let set_multiplicity m =
   read_data := { !read_data with mult=m }
@@ -50,6 +55,7 @@ let speclist = [
 ("-m", Arg.Int    (set_multiplicity),  "Spin multiplicity"    );
 ("-t", Arg.String (set_type),          "Type of calculation [ HF | CAS(n_e,n_a) ]. Default: HF");
 ("-f", Arg.String (set_filename),      "Name of the .dat file containing the MOs. Default: None");
+("-s", Arg.Int    (set_nstate),        "Number of states for state-average. Default: 1");
 
 ]
 
@@ -59,7 +65,7 @@ standard input.
 
 Example:
 
-$ cat << EOF | create_gamess_input -b CCTC -t \"CAS(2,2)\" -f h2o.dat > h2o.inp
+$ cat << EOF | create_gamess_input -b CCTC -t \"CAS(2,2)\" -s 2 -f h2o.dat > h2o.inp
 h
 o 1 oh
 h 2 oh 1 angle
@@ -124,12 +130,13 @@ let run () =
       | None -> ""
       | Some filename -> filename
     end
+  and nstate = !read_data.nstate
   in
 
   let system = 
     Gamess.{ mult ; charge ; basis ; coord }
   in
-  Gamess.create_input ~vecfile ~system typ
+  Gamess.create_input ~vecfile ~system ~nstate typ
   |> print_endline 
 
 
