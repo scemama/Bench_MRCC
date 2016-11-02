@@ -105,6 +105,36 @@ function run_fci ()
   qp_run fci_zmq $EZFIO >> $EZFIO.out
 }
 
+function run_cas_qp ()
+{
+  d=$1                   ; shift
+  GENERATORS=${1:-0.999} ; shift
+  SELECTORS=${1:-0.9999} ; shift
+  NDETMAX=${1:-524288}   ; shift
+
+  EZFIO=$d.cas
+  rm -rf $EZFIO
+  cp -r $d $EZFIO
+  NMCC=$(grep NMCC $d.inp | cut -d '=' -f 2)
+  NDOC=$(grep NDOC $d.inp | cut -d '=' -f 2)
+  NALP=$(grep NALP $d.inp | cut -d '=' -f 2)
+  NVAL=$(grep NVAL $d.inp | cut -d '=' -f 2)
+  NCORE=$(qp_set_frozen_core.py $EZFIO -q)
+  MO_TOT_NUM=$(($(cat $EZFIO/mo_basis/mo_tot_num)))
+  qp_edit -c $EZFIO
+  if [[ $NCORE -eq 0 ]] 
+  then
+    echo qp_set_mo_class $EZFIO -core "[1-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -del "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+    qp_set_mo_class $EZFIO -core "[1-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -del "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+  else
+    echo qp_set_mo_class $EZFIO -core "[1-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -del "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" 
+    qp_set_mo_class $EZFIO -core "[1-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -del "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+  fi
+  init_qp $EZFIO
+  echo " [    CAS       ] [ $EZFIO ]"
+  qp_run fci_zmq $EZFIO > $EZFIO.out
+}
+
 function run_cassd ()
 {
   d=$1                   ; shift
@@ -276,12 +306,18 @@ function convert_to_qp ()
   qp_convert_output_to_ezfio.py ${1}.out --ezfio=$1
   qp_set_frozen_core.py $1 > /dev/null
   qp_edit -c $1
+  qp_run save_ortho_mos $1
   init_qp $1
 }
 
 function grep_CAS_energy ()
 {
-  LINE=$(awk " /TOTAL ENERGY =/ { print \"$1  \", \$4 \"  \"} " $1.out)
+  if [[ $NSTATES == "1" ]]
+  then
+    LINE=$(awk " /TOTAL ENERGY =/ { print \"$1  \", \$4 \"  \"} " $1.out)
+  else
+    LINE=$(awk "/ STATE # .*  ENERGY =/ { print \"$1  \", \$6 \"  \"}" $1.out | tail -$NSTATES)
+  fi
   echo " [      CAS     ] [ $LINE ]"
   echo $LINE >> data_CAS
   sort_file data_CAS
@@ -294,6 +330,16 @@ function grep_FCI_energy ()
   echo " [      FCI     ] [ $LINE ]"
   echo $LINE >> data_FCI
   sort_file data_FCI
+}
+
+function grep_CAS_QP_energy ()
+{
+  EZFIO=$1.cas
+  E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | awk '// { print   $3  }')
+  LINE=$(printf "%s  %16.10f\n" $1 $E)
+  echo " [    CAS       ] [ $LINE ]"
+  echo $LINE >> data_CAS_QP
+  sort_file data_CAS_QP
 }
 
 function grep_CASSD_energy ()
