@@ -98,7 +98,7 @@ function run_fci ()
   echo F > $EZFIO/perturbation/do_pt2_end
   qp_run fci_zmq $EZFIO > $EZFIO.out
   qp_run save_natorb $EZFIO >> $EZFIO.out
-  echo " [  FCI natorb  ] [ $FILE ]"
+  echo " [  FCI natorb  ] [ $EZFIO ]"
   NDETMAX=$NDETMAX_IN
   init_qp $EZFIO
   echo T > $EZFIO/perturbation/do_pt2_end
@@ -216,7 +216,7 @@ function run_mrcepa ()
   echo T > $EZFIO/determinants/read_wf
   echo T > $EZFIO/perturbation/do_pt2_end
   init_qp $EZFIO
-  echo " [    MRCEPA    ] [ $FILE ]"
+  echo " [    MRCEPA    ] [ $EZFIO ]"
   qp_run mrcepa0 $EZFIO > $EZFIO.out
 }
 
