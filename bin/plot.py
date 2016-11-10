@@ -22,7 +22,11 @@ for file in datafiles:
 # Create data files
 for basis in data:
   file = "NPE_%s"%basis
-  keys = sorted(data[basis]['FCI'].keys())
+  try:
+    keys = sorted(data[basis]['FCI'].keys())
+  except:
+    continue
+
   methods = sorted(filter(lambda x: x != "FCI", data[basis].keys()))
   with open(file,'w') as f:
     sum_ = {}
@@ -35,15 +39,23 @@ for basis in data:
       line += " %16s"%m
     print >>f, line
     for x in keys:
-      line = "%-8f "%x
-      EFCI = data[basis]['FCI'][x]
+      cycle = False
       for m in methods:
-        delta_E = data[basis][m][x]-EFCI
-        line += " %16f"%delta_E
-        sum_[m] += delta_E
-        minold, maxold = minmax[m]
-        minmax[m] = (min(minold,delta_E), max(maxold,delta_E))
-      print >>f, line
+        try:
+          data[basis][m][x]
+        except:
+          cycle=True
+          break
+      if not cycle:
+        line = "%-8f "%x
+        EFCI = data[basis]['FCI'][x]
+        for m in methods:
+          delta_E = data[basis][m][x]-EFCI
+          line += " %16f"%delta_E
+          sum_[m] += delta_E
+          minold, maxold = minmax[m]
+          minmax[m] = (min(minold,delta_E), max(maxold,delta_E))
+        print >>f, line
     line = "#Average " 
     for m in methods:
       line += " %16f"%(sum_[m]/len(keys))
