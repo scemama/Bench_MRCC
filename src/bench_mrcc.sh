@@ -105,6 +105,22 @@ function run_fci ()
   qp_run fci_zmq $EZFIO >> $EZFIO.out
 }
 
+function run_fci_nonatorb ()
+{
+  d=$1                   ; shift
+  GENERATORS=${1:-0.999} ; shift
+  SELECTORS=${1:-0.9999} ; shift
+  NDETMAX=${1:-524288}   ; shift
+
+  EZFIO=$d.fci
+  rm -rf $EZFIO
+  cp -r $d $EZFIO
+  qp_set_frozen_core.py $EZFIO > /dev/null
+  init_qp $EZFIO
+  echo T > $EZFIO/perturbation/do_pt2_end
+  qp_run fci_zmq $EZFIO > $EZFIO.out
+}
+
 function run_cas_qp ()
 {
   d=$1                   ; shift
@@ -162,8 +178,8 @@ function run_cassd ()
   fi
   init_qp $EZFIO
   echo " [    CAS+SD    ] [ $EZFIO ]"
-  qp_run cas_sd_selected $EZFIO > $EZFIO.out
-#  qp_run cas_sd $EZFIO > $EZFIO.out
+  qp_run cassd_zmq $EZFIO > $EZFIO.out
+#  qp_run cas_sd_selected $EZFIO > $EZFIO.out
 }
 
 function run_mrcc ()
