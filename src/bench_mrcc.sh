@@ -128,9 +128,7 @@ function run_cas_qp ()
   SELECTORS=${1:-0.9999} ; shift
   NDETMAX=${1:-524288}   ; shift
 
-  EZFIO=$d.cas
-  rm -rf $EZFIO
-  cp -r $d $EZFIO
+  EZFIO=$d
   NMCC=$(grep NMCC $d.inp | cut -d '=' -f 2)
   NDOC=$(grep NDOC $d.inp | cut -d '=' -f 2)
   NALP=$(grep NALP $d.inp | cut -d '=' -f 2)
@@ -148,7 +146,9 @@ function run_cas_qp ()
   fi
   init_qp $EZFIO
   echo " [    CAS       ] [ $EZFIO ]"
-  qp_run fci_zmq $EZFIO > $EZFIO.out
+  qp_run fci_zmq $EZFIO > $EZFIO.out || return
+  echo T > ${EZFIO}/determinants/read_wf
+  qp_set_frozen_core.py $EZFIO
 }
 
 function run_cassd ()
@@ -308,6 +308,7 @@ function run_point ()
   update_z_variables $d
   print_geometry | create_gamess_input $OPTIONS $@ > ${d}.inp
   run_gamess $d
+  mv $d.out $d.gamess.out
 }
 
 function sort_file ()
@@ -319,7 +320,7 @@ function sort_file ()
 function convert_to_qp ()
 {
   echo " [  QP_CONVERT  ] [ $1 ]"
-  qp_convert_output_to_ezfio.py ${1}.out --ezfio=$1
+  qp_convert_output_to_ezfio.py ${1}.gamess.out --ezfio=$1
   qp_set_frozen_core.py $1 > /dev/null
   qp_edit -c $1
   qp_run save_ortho_mos $1
@@ -330,9 +331,9 @@ function grep_CAS_energy ()
 {
   if [[ $NSTATES == "1" ]]
   then
-    LINE=$(awk " /TOTAL ENERGY =/ { print \"$1  \", \$4 \"  \"} " $1.out)
+    LINE=$(awk " /TOTAL ENERGY =/ { print \"$1  \", \$4 \"  \"} " $1.gamess.out)
   else
-    LINE=$(awk "/ STATE # .*  ENERGY =/ { print \"$1  \", \$6 \"  \"}" $1.out | tail -$NSTATES)
+    LINE=$(awk "/ STATE # .*  ENERGY =/ { print \"$1  \", \$6 \"  \"}" $1.gamess.out | tail -$NSTATES)
   fi
   echo " [      CAS     ] [ $LINE ]"
   echo $LINE >> data_CAS
@@ -345,9 +346,14 @@ function get_energy ()
   then
     E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | awk '// { print   $3}')
     LINE=$(printf "%s  %16.10f\n" $1 $E)
-  else
+  elif [[ $NSTATES == 2 ]]
+  then
     E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | cut -d '=' -f 2)
-    LINE=$(printf "%s  %s\n" $1 "$E")
+    LINE=$(printf "%s  %s %s\n" $1 $E)
+  elif [[ $NSTATES == 3 ]]
+  then
+    E=$(grep -A1 "E+PT2   " ${EZFIO}.out  | tail -2 | cut -d '=' -f 2)
+    LINE=$(printf "%s  %s %s %s\n" $1 $E)
   fi
 }
 
@@ -363,7 +369,7 @@ function grep_FCI_energy ()
 
 function grep_CAS_QP_energy ()
 {
-  EZFIO=$1.cas
+  EZFIO=$1
   get_energy  $1
   echo " [    CAS       ] [ $LINE ]"
   echo $LINE >> data_CAS_QP
@@ -373,7 +379,8 @@ function grep_CAS_QP_energy ()
 function grep_CASSD_energy ()
 {
   EZFIO=$1.cassd
-  get_energy  $1
+  E=$(grep "E+PT2   " ${1}.cassd.out | cut -d '=' -f 2 | xargs echo)
+  LINE=$(printf "%s  %s\n" $1 $E)
   echo " [    CAS+SD    ] [ $LINE ]"
   echo $LINE >> data_CASSD
   sort_file data_CASSD

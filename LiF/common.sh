@@ -1,11 +1,12 @@
 #!/bin/bash 
 
-SBATCH_ARGS="-n 1 -N 1 --exclusive -p xeonv4,xeonv3"
+SBATCH_ARGS="-n 1 -N 1 --exclusive"
 BASIS="CCD"
-METHOD="CAS(2,2)"
+METHOD="CAS(2,5)"
 DISTANCES="$(seq 2.00 0.10 8.00)"
 EQUILIBRIUM="4.00"
 S2EIG="T"
+LAMBDA=0
 NSTATES=2
 GEOMETRY="
 F
