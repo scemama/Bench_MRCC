@@ -370,7 +370,9 @@ function grep_FCI_energy ()
 function grep_CAS_QP_energy ()
 {
   EZFIO=$1
-  get_energy  $1
+get_energy $1
+#  E=$(grep "E+PT2   " ${1}.cassd.out | cut -d '=' -f 2 | xargs echo)
+#  LINE=$(printf "%s  %s\n" $1 $E)
   echo " [    CAS       ] [ $LINE ]"
   echo $LINE >> data_CAS_QP
   sort_file data_CAS_QP

@@ -19,7 +19,7 @@ EOF
 }
 
 # Execution
-rm -f data_CAS
+rm -f data_CAS_QP
 distance_loop 
 
 
