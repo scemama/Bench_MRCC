@@ -26,6 +26,9 @@ export TMPDIR
 [[ -z $THRESH_DAVIDSON ]] && THRESH_DAVIDSON=1.e-12
 [[ -z $LAMBDA ]] && LAMBDA=0
 [[ -z $NSTATES ]] && NSTATES=1
+[[ -z $STATE_FOLLOWING ]] && STATE_FOLLOWING=F
+[[ -z $THRESH_DRESSED_CI ]] && THRESH_DRESSED_CI=1.e-5
+[[ -z $N_IT_DRESSED_CI ]] && N_IT_DRESSED_CI=10
 
 OPTIONS="-b $BASIS -c $CHARGE -m $MULT -s $NSTATES"
 
@@ -78,7 +81,10 @@ function init_qp()
   echo $GENERATORS > $d/determinants/threshold_generators
   echo $SELECTORS > $d/determinants/threshold_selectors
   echo $THRESH_DAVIDSON > $d/davidson/threshold_davidson
+  echo $STATE_FOLLOWING > $d/davidson/state_following
   echo $LAMBDA > $d/mrcepa0/lambda_type
+  echo $THRESH_DRESSED_CI > $d/mrcepa0/thresh_dressed_ci
+  echo $N_IT_DRESSED_CI > $d/mrcepa0/n_it_max_dressed_ci
 }
 
 function run_fci ()
@@ -189,6 +195,7 @@ function run_mrcc ()
   GENERATORS=${1:-0.999} ; shift
   SELECTORS=${1:-0.9999} ; shift
   NDETMAX=${1:-524288}   ; shift
+  STATE_FOLLOWING=T
 
   EZFIO=$d.mrcc
   rm -rf $EZFIO
@@ -207,6 +214,7 @@ function run_mrsc2 ()
   GENERATORS=${1:-0.999} ; shift
   SELECTORS=${1:-0.9999} ; shift
   NDETMAX=${1:-524288}   ; shift
+  STATE_FOLLOWING=T
 
   EZFIO=$d.mrsc2
   rm -rf $EZFIO
@@ -225,6 +233,7 @@ function run_mrcepa ()
   GENERATORS=${1:-0.999} ; shift
   SELECTORS=${1:-0.9999} ; shift
   NDETMAX=${1:-524288}   ; shift
+  STATE_FOLLOWING=T
 
   EZFIO=$d.mrcepa
   rm -rf $EZFIO
@@ -370,7 +379,9 @@ function grep_FCI_energy ()
 function grep_CAS_QP_energy ()
 {
   EZFIO=$1
-  get_energy  $1
+get_energy $1
+#  E=$(grep "E+PT2   " ${1}.cassd.out | cut -d '=' -f 2 | xargs echo)
+#  LINE=$(printf "%s  %s\n" $1 $E)
   echo " [    CAS       ] [ $LINE ]"
   echo $LINE >> data_CAS_QP
   sort_file data_CAS_QP

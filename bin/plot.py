@@ -14,7 +14,11 @@ for file in datafiles:
   else:
     with open(file,'r') as f:
       values_text = f.readlines()
-      values = dict(map(lambda x: (float(x.split()[0]), float(x.split()[1])), values_text))
+      try:
+        values = dict(map(lambda x: (float(x.split()[0]), float(x.split()[1])), values_text))
+      except:
+        print file
+        raise
       if basis not in data:
         data[basis] = {}
       data[basis][method] = values
