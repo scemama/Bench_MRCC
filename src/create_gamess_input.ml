@@ -2,6 +2,7 @@ type read_data_t =
 { mult  : int ;
   charge: int ;
   typ   : Gamess.computation;
+  guess : Gamess.guess_t;
   basis : string option;
   filename: string option;
   coord: Gamess.coord_t option;
@@ -11,6 +12,7 @@ type read_data_t =
 let read_data = ref {
   mult = 1;
   charge = 0;
+  guess = Gamess.Huckel;
   typ = Gamess.HF;
   filename = None;
   basis = None;
@@ -49,6 +51,9 @@ let set_type t =
       read_data := { !read_data with typ=Gamess.CAS(n_e,n_a) }
     end
  
+let set_guess g =
+  read_data := { !read_data with guess=Gamess.guess_of_string g }
+
 let speclist = [
 ("-b", Arg.String (set_basis),         "Basis set [ CCD | CCT | ... ]");
 ("-c", Arg.Int    (set_charge),        "Charge of the system. Default: 0" );
@@ -56,6 +61,7 @@ let speclist = [
 ("-t", Arg.String (set_type),          "Type of calculation [ HF | CAS(n_e,n_a) ]. Default: HF");
 ("-f", Arg.String (set_filename),      "Name of the .dat file containing the MOs. Default: None");
 ("-s", Arg.Int    (set_nstate),        "Number of states for state-average. Default: 1");
+("-g", Arg.String (set_guess),         "Type of MO guess [ HUCKEL | HCORE ]. Default: HUCKEL");
 
 ]
 
@@ -131,12 +137,13 @@ let run () =
       | Some filename -> filename
     end
   and nstate = !read_data.nstate
+  and guess  = !read_data.guess
   in
 
   let system = 
     Gamess.{ mult ; charge ; basis ; coord }
   in
-  Gamess.create_input ~vecfile ~system ~nstate typ
+  Gamess.create_input ~vecfile ~system ~guess ~nstate typ
   |> print_endline 
 
 
