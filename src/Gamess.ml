@@ -111,19 +111,28 @@ let string_of_vec = function
 (** GUESS *)
 type guess_t =
 | Huckel
+| Hcore 
 | Canonical of (int*string)
 | Natural   of (int*string)
+
+let guess_of_string s =
+  match String.lowercase s with
+  | "huckel" -> Huckel
+  | "hcore"  -> Hcore
+  | _ -> raise (Invalid_argument "Bad MO guess")
 
 let string_of_guess g =
  [
  " $GUESS\n" ; "  GUESS=" ; 
  begin
   match g with
+    | Hcore  -> "HCORE\n"
     | Huckel -> "HUCKEL\n"
     | Canonical (norb,_) | Natural (norb,_) -> Printf.sprintf "MOREAD\n  NORB=%d\n" norb
  end
  ; " $END" ;
  match g with
+    | Hcore
     | Huckel  -> ""
     | Natural (_,filename)  -> "\n\n"^(string_of_vec (Natural filename))
     | Canonical (_,filename) ->"\n\n"^(string_of_vec (Canonical filename))
@@ -353,7 +362,7 @@ let n_elec_alpha_beta system =
   (alpha, beta)
 
   
-let create_single_det_input ~mp2 ?(vecfile="") s =
+let create_single_det_input ~mp2 ~guess ?(vecfile="") s =
   let scftyp =
     match s.mult with
     | 1 -> RHF
@@ -371,7 +380,7 @@ let create_single_det_input ~mp2 ?(vecfile="") s =
   ;
     begin
       match vecfile with
-      | "" ->     string_of_guess Huckel
+      | "" ->     string_of_guess guess
       | vecfile -> string_of_guess (Canonical (n_elec_alpha, vecfile))
     end
   ;
@@ -387,14 +396,14 @@ let create_single_det_input ~mp2 ?(vecfile="") s =
   ] |> String.concat "\n\n"
   
 
-let create_hf_input =
-  create_single_det_input ~mp2:false 
+let create_hf_input ~guess =
+  create_single_det_input ~mp2:false ~guess
 
-let create_mp2_input =
-  create_single_det_input ~mp2:true
+let create_mp2_input ~guess =
+  create_single_det_input ~mp2:true ~guess
 
 
-let create_cas_input ?(vecfile="") ~nstate s n_e n_a =
+let create_cas_input ?(vecfile="") ~guess ~nstate s n_e n_a =
   let scftyp = MCSCF
   and mult = s.mult
   and charge = s.charge
@@ -414,7 +423,7 @@ let create_cas_input ?(vecfile="") ~nstate s n_e n_a =
   ;
     begin
       match vecfile with
-      | "" ->     string_of_guess Huckel
+      | "" ->     string_of_guess guess
       | vecfile -> 
           let norb =
             drt.nmcc + drt.ndoc + drt.nval + drt.nalp
@@ -440,9 +449,9 @@ let create_cas_input ?(vecfile="") ~nstate s n_e n_a =
   ] |> String.concat "\n\n"
   
 
-let create_input ?(vecfile="") ~system ~nstate = function
-| HF   -> create_hf_input ~vecfile system
-| MP2  -> create_mp2_input ~vecfile system
-| CAS (n_e,n_a) -> create_cas_input ~vecfile ~nstate system n_e n_a 
+let create_input ?(vecfile="") ?(guess=Huckel) ~system ~nstate = function
+| HF   -> create_hf_input ~vecfile ~guess system
+| MP2  -> create_mp2_input ~vecfile  ~guess system
+| CAS (n_e,n_a) -> create_cas_input ~vecfile ~nstate ~guess system n_e n_a 
 
 
