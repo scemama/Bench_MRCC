@@ -226,6 +226,25 @@ function run_mrsc2 ()
   qp_run mrsc2 $EZFIO > $EZFIO.out
 }
 
+function run_mrsc2_noamp ()
+{
+  d=$1                   ; shift
+  LAMBDA=${1:-0}         ; shift
+  GENERATORS=${1:-0.999} ; shift
+  SELECTORS=${1:-0.9999} ; shift
+  NDETMAX=${1:-524288}   ; shift
+  STATE_FOLLOWING=T
+
+  EZFIO=${d}.mrsc2_noamp
+  rm -rf $EZFIO
+  cp -r $d.cassd $EZFIO
+  echo T > $EZFIO/determinants/read_wf
+  echo F > $EZFIO/perturbation/do_pt2_end
+  init_qp $EZFIO
+  echo " [    MRSC2_noamp     ] [ $EZFIO ]"
+  qp_run sc2_no_amp $EZFIO > $EZFIO.out
+}
+
 function run_mrcepa ()
 {
   d=$1                   ; shift
@@ -422,6 +441,15 @@ function grep_MRSC2_energy ()
   echo " [    MRSC2     ] [ $LINE ]"
   echo $LINE >> data_MRSC2
   sort_file data_MRSC2
+}
+
+function grep_MRSC2_noamp_energy ()
+{
+  EZFIO=$1.mrsc2_noamp
+  get_energy  $1
+  echo " [    MRSC2     ] [ $LINE ]"
+  echo $LINE >> data_MRSC2_noamp
+  sort_file data_MRSC2_noamp
 }
 
 

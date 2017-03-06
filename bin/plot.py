@@ -2,6 +2,11 @@
 
 import os, sys
 
+if len(sys.argv) > 1:
+  column= int(sys.argv[1])
+else:
+  column=1
+
 datafiles = filter(lambda x: x.startswith('data_'), os.listdir(os.getcwd()))
 
 # Read data files
@@ -15,7 +20,7 @@ for file in datafiles:
     with open(file,'r') as f:
       values_text = f.readlines()
       try:
-        values = dict(map(lambda x: (float(x.split()[0]), float(x.split()[1])), values_text))
+        values = dict(map(lambda x: (float(x.split()[0]), float(x.split()[column])), values_text))
       except:
         print file
         raise
