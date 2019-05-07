@@ -19,16 +19,13 @@ export TMPDIR
 
 [[ -z $MULT   ]] && MULT=1
 [[ -z $CHARGE ]] && CHARGE=0
-[[ -z $S2EIG  ]] && S2EIG=F
+[[ -z $S2EIG  ]] && S2EIG=T
 [[ -z $PT2MAX ]] && PT2MAX=5.e-4
 [[ -z $NSTATES ]] && NSTATES=1
-[[ -z $NSTATES_DIAG ]] && NSTATES_DIAG=10
+[[ -z $NSTATES_DIAG ]] && NSTATES_DIAG=16
 [[ -z $THRESH_DAVIDSON ]] && THRESH_DAVIDSON=1.e-12
-[[ -z $LAMBDA ]] && LAMBDA=0
 [[ -z $NSTATES ]] && NSTATES=1
 [[ -z $STATE_FOLLOWING ]] && STATE_FOLLOWING=F
-[[ -z $THRESH_DRESSED_CI ]] && THRESH_DRESSED_CI=1.e-5
-[[ -z $N_IT_DRESSED_CI ]] && N_IT_DRESSED_CI=10
 
 OPTIONS="-b $BASIS -c $CHARGE -m $MULT -s $NSTATES"
 
@@ -72,97 +69,96 @@ function run_gamess ()
 function init_qp()
 {
   d=$1
-  qp_edit -c $d
-  echo $S2EIG > $d/determinants/s2_eig
-  echo $NSTATES > $d/determinants/n_states
-  echo $NSTATES_DIAG > $d/davidson/n_states_diag
-  echo $PT2MAX > $d/perturbation/pt2_max
-  echo $NDETMAX > $d/determinants/n_det_max
-  echo $GENERATORS > $d/determinants/threshold_generators
-  echo $SELECTORS > $d/determinants/threshold_selectors
-  echo $THRESH_DAVIDSON > $d/davidson/threshold_davidson
-  echo $STATE_FOLLOWING > $d/davidson/state_following
-  echo $LAMBDA > $d/mrcepa0/lambda_type
-  echo $THRESH_DRESSED_CI > $d/mrcepa0/thresh_dressed_ci
-  echo $N_IT_DRESSED_CI > $d/mrcepa0/n_it_max_dressed_ci
+  qp set_file $1
+  qp edit -c 
+  qp set determinants s2_echg $S2EIG 
+  qp set determinants n_states $NSTATES
+  qp set determinants n_states_diag $NSTATES_DIAG
+  qp set determinants n_det_max $NDETMAX
+  qp set davidson threshold_davidson $THRESH_DAVIDSON
+  qp set davidson state_following $STATE_FOLLOWING
+  qp set perturbation pt2_max $PT2MAX
 }
 
 function run_fci ()
 {
   d=$1                   ; shift
-  GENERATORS=${1:-0.999} ; shift
-  SELECTORS=${1:-0.9999} ; shift
-  NDETMAX=${1:-524288}   ; shift
+  NDETMAX=${1:-1000000}  ; shift
   NDETMAX_IN=$NDETMAX
 
   EZFIO=$d.fci
   rm -rf $EZFIO
   cp -r $d $EZFIO
-  qp_set_frozen_core.py $EZFIO > /dev/null
+  qp_set_frozen_core $EZFIO > /dev/null
   NDETMAX=262144
   init_qp $EZFIO
   echo F > $EZFIO/perturbation/do_pt2_end
-  qp_run fci_zmq $EZFIO > $EZFIO.out
-  qp_run save_natorb $EZFIO >> $EZFIO.out
+  srun qp_run fci $EZFIO > $EZFIO.out
+  srun qp_run save_natorb $EZFIO >> $EZFIO.out
   echo " [  FCI natorb  ] [ $EZFIO ]"
   NDETMAX=$NDETMAX_IN
   init_qp $EZFIO
   echo T > $EZFIO/perturbation/do_pt2_end
-  qp_run fci_zmq $EZFIO >> $EZFIO.out
+  srun qp_run fci $EZFIO >> $EZFIO.out
 }
 
 function run_fci_nonatorb ()
 {
   d=$1                   ; shift
-  GENERATORS=${1:-0.999} ; shift
-  SELECTORS=${1:-0.9999} ; shift
-  NDETMAX=${1:-524288}   ; shift
+  NDETMAX=${1:-1000000}  ; shift
 
   EZFIO=$d.fci
   rm -rf $EZFIO
   cp -r $d $EZFIO
-  qp_set_frozen_core.py $EZFIO > /dev/null
+  qp_set_frozen_core $EZFIO > /dev/null
   init_qp $EZFIO
-  echo T > $EZFIO/perturbation/do_pt2_end
-  qp_run fci_zmq $EZFIO > $EZFIO.out
+  srun qp_run fci $EZFIO > $EZFIO.out
 }
 
 function run_cas_qp ()
 {
   d=$1                   ; shift
-  GENERATORS=${1:-0.999} ; shift
-  SELECTORS=${1:-0.9999} ; shift
-  NDETMAX=${1:-524288}   ; shift
+  NDETMAX=${1:-1000000}  ; shift
 
   EZFIO=$d
   NMCC=$(grep NMCC $d.inp | cut -d '=' -f 2)
   NDOC=$(grep NDOC $d.inp | cut -d '=' -f 2)
   NALP=$(grep NALP $d.inp | cut -d '=' -f 2)
   NVAL=$(grep NVAL $d.inp | cut -d '=' -f 2)
-  NCORE=$(qp_set_frozen_core.py $EZFIO -q)
+  NCORE=$(qp_set_frozen_core $EZFIO -q)
   MO_TOT_NUM=$(($(cat $EZFIO/mo_basis/mo_tot_num)))
   qp_edit -c $EZFIO
   if [[ $NCORE -eq 0 ]] 
   then
-    echo qp_set_mo_class $EZFIO -core "[1-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -del "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
-    qp_set_mo_class $EZFIO -core "[1-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -del "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+    echo qp_set_mo_class $EZFIO \
+      -c "[1-$NMCC]" \
+      -a "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" \
+      -d "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+    qp_set_mo_class $EZFIO \
+      -c "[1-$NMCC]" \
+      -a "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" \
+      -d "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
   else
-    echo qp_set_mo_class $EZFIO -core "[1-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -del "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" 
-    qp_set_mo_class $EZFIO -core "[1-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -del "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+    echo qp_set_mo_class $EZFIO \
+      -c "[1-$NMCC]" \
+      -a "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" \
+      -d "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" 
+    qp_set_mo_class $EZFIO \
+      -c "[1-$NMCC]" \
+      -a "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" \
+      -d "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
   fi
   init_qp $EZFIO
   echo " [    CAS       ] [ $EZFIO ]"
-  qp_run fci_zmq $EZFIO > $EZFIO.out || return
+  srun qp_run fci $EZFIO > $EZFIO.out || return
   echo T > ${EZFIO}/determinants/read_wf
-  qp_set_frozen_core.py $EZFIO
+  qp_set_frozen_core $EZFIO
 }
 
 function run_cassd ()
 {
   d=$1                   ; shift
-  GENERATORS=${1:-0.999} ; shift
-  SELECTORS=${1:-0.9999} ; shift
-  NDETMAX=${1:-524288}   ; shift
+  NDETMAX=${1:-1000000}  ; shift
 
   EZFIO=$d.cassd
   rm -rf $EZFIO
@@ -171,97 +167,77 @@ function run_cassd ()
   NDOC=$(grep NDOC $d.inp | cut -d '=' -f 2)
   NALP=$(grep NALP $d.inp | cut -d '=' -f 2)
   NVAL=$(grep NVAL $d.inp | cut -d '=' -f 2)
-  NCORE=$(qp_set_frozen_core.py $EZFIO -q)
+  NCORE=$(qp_set_frozen_core $EZFIO -q)
   MO_TOT_NUM=$(($(cat $EZFIO/mo_basis/mo_tot_num)))
   qp_edit -c $EZFIO
   if [[ $NCORE -eq 0 ]] 
   then
-    echo qp_set_mo_class $EZFIO -inact "[1-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -virt "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
-    qp_set_mo_class $EZFIO -inact "[1-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -virt "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+    echo qp_set_mo_class $EZFIO \
+      -i "[1-$NMCC]" \
+      -a "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" \
+      -v "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+    qp_set_mo_class $EZFIO \
+      -i "[1-$NMCC]" \
+      -a "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" \
+      -v "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
   else
-    echo qp_set_mo_class $EZFIO -core "[1-$NCORE]" -inact "[$((NCORE+1))-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -virt "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" 
-    qp_set_mo_class $EZFIO -core "[1-$NCORE]" -inact "[$((NCORE+1))-$NMCC]" -act "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" -virt "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+    echo qp_set_mo_class $EZFIO \
+      -c "[1-$NCORE]" \
+      -i "[$((NCORE+1))-$NMCC]" \
+      -a "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" \
+      -v "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" 
+    qp_set_mo_class $EZFIO \
+      -c "[1-$NCORE]" \
+      -i "[$((NCORE+1))-$NMCC]" \
+      -a "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" \
+      -v "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
   fi
   init_qp $EZFIO
   echo " [    CAS+SD    ] [ $EZFIO ]"
-  qp_run cassd_zmq $EZFIO > $EZFIO.out
-#  qp_run cas_sd_selected $EZFIO > $EZFIO.out
+  srun qp_run cassd_zmq $EZFIO > $EZFIO.out
+#  srun qp_run cas_sd_selected $EZFIO > $EZFIO.out
 }
 
-function run_mrcc ()
+function run_cis()
 {
   d=$1                   ; shift
-  LAMBDA=${1:-0}         ; shift
-  GENERATORS=${1:-0.999} ; shift
-  SELECTORS=${1:-0.9999} ; shift
-  NDETMAX=${1:-524288}   ; shift
-  STATE_FOLLOWING=T
+  NDETMAX=${1:-1000000}  ; shift
 
-  EZFIO=$d.mrcc
+  EZFIO=$d.cis
   rm -rf $EZFIO
-  cp -r $d.cassd $EZFIO
-  echo T > $EZFIO/determinants/read_wf
-  echo T > $EZFIO/perturbation/do_pt2_end
+  cp -r $d $EZFIO
+  NMCC=$(grep NMCC $d.inp | cut -d '=' -f 2)
+  NDOC=$(grep NDOC $d.inp | cut -d '=' -f 2)
+  NALP=$(grep NALP $d.inp | cut -d '=' -f 2)
+  NVAL=$(grep NVAL $d.inp | cut -d '=' -f 2)
+  NCORE=$(qp_set_frozen_core $EZFIO -q)
+  MO_TOT_NUM=$(($(cat $EZFIO/mo_basis/mo_tot_num)))
+  qp_edit -c $EZFIO
+  if [[ $NCORE -eq 0 ]] 
+  then
+    echo qp_set_mo_class $EZFIO \
+      -i "[1-$NMCC]" \
+      -a "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" \
+      -v "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+    qp_set_mo_class $EZFIO \
+      -i "[1-$NMCC]" \
+      -a "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" \
+      -v "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+  else
+    echo qp_set_mo_class $EZFIO \
+      -c "[1-$NCORE]" \
+      -i "[$((NCORE+1))-$NMCC]" \
+      -a "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" \
+      -v "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" 
+    qp_set_mo_class $EZFIO \
+      -c "[1-$NCORE]" \
+      -i "[$((NCORE+1))-$NMCC]" \
+      -a "[$((NMCC+1))-$((NMCC+NDOC+NVAL+NALP))]" \
+      -v "[$((NMCC+NDOC+NVAL+NALP+1))-$MO_TOT_NUM]" > /dev/null
+  fi
   init_qp $EZFIO
-  echo " [    MRCCSD    ] [ $EZFIO ]"
-  qp_run mrcc $EZFIO > $EZFIO.out
-}
-
-function run_mrsc2 ()
-{
-  d=$1                   ; shift
-  LAMBDA=${1:-0}         ; shift
-  GENERATORS=${1:-0.999} ; shift
-  SELECTORS=${1:-0.9999} ; shift
-  NDETMAX=${1:-524288}   ; shift
-  STATE_FOLLOWING=T
-
-  EZFIO=$d.mrsc2
-  rm -rf $EZFIO
-  cp -r $d.cassd $EZFIO
-  echo T > $EZFIO/determinants/read_wf
-  echo T > $EZFIO/perturbation/do_pt2_end
-  init_qp $EZFIO
-  echo " [    MRSC2     ] [ $EZFIO ]"
-  qp_run mrsc2 $EZFIO > $EZFIO.out
-}
-
-function run_mrsc2_noamp ()
-{
-  d=$1                   ; shift
-  LAMBDA=${1:-0}         ; shift
-  GENERATORS=${1:-0.999} ; shift
-  SELECTORS=${1:-0.9999} ; shift
-  NDETMAX=${1:-524288}   ; shift
-  STATE_FOLLOWING=T
-
-  EZFIO=${d}.mrsc2_noamp
-  rm -rf $EZFIO
-  cp -r $d.cassd $EZFIO
-  echo T > $EZFIO/determinants/read_wf
-  echo F > $EZFIO/perturbation/do_pt2_end
-  init_qp $EZFIO
-  echo " [    MRSC2_noamp     ] [ $EZFIO ]"
-  qp_run sc2_no_amp $EZFIO > $EZFIO.out
-}
-
-function run_mrcepa ()
-{
-  d=$1                   ; shift
-  LAMBDA=${1:-0}         ; shift
-  GENERATORS=${1:-0.999} ; shift
-  SELECTORS=${1:-0.9999} ; shift
-  NDETMAX=${1:-524288}   ; shift
-  STATE_FOLLOWING=T
-
-  EZFIO=$d.mrcepa
-  rm -rf $EZFIO
-  cp -r $d.cassd $EZFIO
-  echo T > $EZFIO/determinants/read_wf
-  echo T > $EZFIO/perturbation/do_pt2_end
-  init_qp $EZFIO
-  echo " [    MRCEPA    ] [ $EZFIO ]"
-  qp_run mrcepa0 $EZFIO > $EZFIO.out
+  echo " [    CIS       ] [ $EZFIO ]"
+  srun qp_run cis $EZFIO > $EZFIO.out
 }
 
 function reorder_distances ()
@@ -348,10 +324,9 @@ function sort_file ()
 function convert_to_qp ()
 {
   echo " [  QP_CONVERT  ] [ $1 ]"
-  qp_convert_output_to_ezfio.py ${1}.gamess.out --ezfio=$1
-  qp_set_frozen_core.py $1 > /dev/null
+  qp_convert_output_to_ezfio ${1}.gamess.out --ezfio=$1
+  qp_set_frozen_core $1 > /dev/null
   qp_edit -c $1
-  qp_run save_ortho_mos $1
   init_qp $1
 }
 
@@ -368,28 +343,44 @@ function grep_CAS_energy ()
   sort_file data_CAS
 }
 
-function get_energy ()
+function get_extrapolated_energy ()
 {
+  local OUT
+  OUT=${EZFIO}.out
   if [[ $NSTATES == 1 ]] 
   then
-    E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | awk '// { print   $3}')
-    LINE=$(printf "%s  %16.10f\n" $1 $E)
+    E1=$(grep -A 3 Extrapolated ${OUT} | tail -20 | tail -1)
+    LINE=$(printf "%s  %s %s %s\n" $1 $E1)
   elif [[ $NSTATES == 2 ]]
   then
-    E=$(grep "E+PT2   " ${EZFIO}.out | tail -1 | cut -d '=' -f 2)
-    LINE=$(printf "%s  %s %s\n" $1 $E)
+    E1=$(grep -A 3 Extrapolated ${OUT} | tail -20 | head -15 | tail -1)
+    E2=$(grep -A 3 Extrapolated ${OUT} | tail -20 | tail -1)
+    LINE=$(printf "%s  %s %s %s\n" $1 $E1 $E2)
   elif [[ $NSTATES == 3 ]]
   then
-    E=$(grep -A1 "E+PT2   " ${EZFIO}.out  | tail -2 | cut -d '=' -f 2)
-    LINE=$(printf "%s  %s %s %s\n" $1 $E)
+    E1=$(grep -A 3 Extrapolated ${OUT} | tail -20 | head -10 | tail -1)
+    E2=$(grep -A 3 Extrapolated ${OUT} | tail -20 | head -15 | tail -1)
+    E3=$(grep -A 3 Extrapolated ${OUT} | tail -20 | tail -1)
+    LINE=$(printf "%s  %s %s %s\n" $1 $E1 $E2 $E3)
   fi
 }
 
 
+function grep_CIS_energy ()
+{
+  EZFIO=$1.fci
+  qp set_file $EZFIO
+  E=$(qp get cis energy | tr "," " " | tr "[" " "| tr "]" " ")
+  LINE=$(printf "%s  %s\n" $1 $E)
+  echo " [      CIS     ] [ $LINE ]"
+  echo $LINE >> data_CIS
+  sort_file data_CIS
+}
+
 function grep_FCI_energy ()
 {
   EZFIO=$1.fci
-  get_energy  $1
+  get_extrapolated_energy $1
   echo " [      FCI     ] [ $LINE ]"
   echo $LINE >> data_FCI
   sort_file data_FCI
@@ -398,9 +389,7 @@ function grep_FCI_energy ()
 function grep_CAS_QP_energy ()
 {
   EZFIO=$1
-get_energy $1
-#  E=$(grep "E+PT2   " ${1}.cassd.out | cut -d '=' -f 2 | xargs echo)
-#  LINE=$(printf "%s  %s\n" $1 $E)
+  get_extrapolated_energy $1
   echo " [    CAS       ] [ $LINE ]"
   echo $LINE >> data_CAS_QP
   sort_file data_CAS_QP
@@ -409,47 +398,10 @@ get_energy $1
 function grep_CASSD_energy ()
 {
   EZFIO=$1.cassd
-  E=$(grep "E+PT2   " ${1}.cassd.out | cut -d '=' -f 2 | xargs echo)
-  LINE=$(printf "%s  %s\n" $1 $E)
+  get_extrapolated_energy $1
   echo " [    CAS+SD    ] [ $LINE ]"
   echo $LINE >> data_CASSD
   sort_file data_CASSD
-}
-
-function grep_MRCC_energy ()
-{
-  EZFIO=$1.mrcc
-  get_energy  $1
-  echo " [    MRCCSD    ] [ $LINE ]"
-  echo $LINE >> data_MRCC
-  sort_file data_MRCC
-}
-
-function grep_MRCEPA_energy ()
-{
-  EZFIO=$1.mrcepa
-  get_energy  $1
-  echo " [    MRCEPA    ] [ $LINE ]"
-  echo $LINE >> data_MRCEPA
-  sort_file data_MRCEPA
-}
-
-function grep_MRSC2_energy ()
-{
-  EZFIO=$1.mrsc2
-  get_energy  $1
-  echo " [    MRSC2     ] [ $LINE ]"
-  echo $LINE >> data_MRSC2
-  sort_file data_MRSC2
-}
-
-function grep_MRSC2_noamp_energy ()
-{
-  EZFIO=$1.mrsc2_noamp
-  get_energy  $1
-  echo " [    MRSC2     ] [ $LINE ]"
-  echo $LINE >> data_MRSC2_noamp
-  sort_file data_MRSC2_noamp
 }
 
 

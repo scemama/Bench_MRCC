@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-SBATCH_ARGS="-n 1 -N 1 --exclusive"
+SBATCH_ARGS="-n 1 -N 1 --exclusive -p xeonv4 -c 28"
 BASIS="CCD"
 METHOD="CAS(2,2)"
 DISTANCES="$(seq -w 0.0 10. 90.0) "
