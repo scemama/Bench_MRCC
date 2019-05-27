@@ -24,7 +24,12 @@ let string_of_contrl c =
    MULT=%d
    ICHARG=%d
    MPLEVL=%d
- $END"
+ $END
+ $SYSTEM 
+  MEMDDI=10000000
+ $END
+
+"
  (string_of_scftyp c.scftyp)
  c.maxit c.ispher c.mult c.icharg c.mplevl
 

@@ -19,13 +19,13 @@ export TMPDIR
 
 [[ -z $MULT   ]] && MULT=1
 [[ -z $CHARGE ]] && CHARGE=0
-[[ -z $S2EIG  ]] && S2EIG=T
+[[ -z $S2EIG  ]] && S2EIG=1
 [[ -z $PT2MAX ]] && PT2MAX=5.e-4
 [[ -z $NSTATES ]] && NSTATES=1
 [[ -z $NSTATES_DIAG ]] && NSTATES_DIAG=16
 [[ -z $THRESH_DAVIDSON ]] && THRESH_DAVIDSON=1.e-12
 [[ -z $NSTATES ]] && NSTATES=1
-[[ -z $STATE_FOLLOWING ]] && STATE_FOLLOWING=F
+[[ -z $STATE_FOLLOWING ]] && STATE_FOLLOWING=0
 
 OPTIONS="-b $BASIS -c $CHARGE -m $MULT -s $NSTATES"
 
@@ -61,6 +61,7 @@ function run_gamess ()
   
   echo " [    GAMESS    ] [ $FILE ]"
   rm -f $TMPDIR/${FILE}.*
+  rm -f ${FILE}.dat
   $RUNGMS $FILE > $FILE.out 2> $FILE.err && rm -rf $FILE.err
   [[ -f $TMPDIR/$FILE.dat ]] && mv $TMPDIR/$FILE.dat .
 }
@@ -324,7 +325,7 @@ function sort_file ()
 function convert_to_qp ()
 {
   echo " [  QP_CONVERT  ] [ $1 ]"
-  qp_convert_output_to_ezfio ${1}.gamess.out --ezfio=$1
+  qp_convert_output_to_ezfio ${1}.gamess.out -o $1
   qp_set_frozen_core $1 > /dev/null
   qp_edit -c $1
   init_qp $1

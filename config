@@ -1,2 +1,3 @@
+source ~/qp2/quantum_package.rc
 RUNGMS=${RUNGMS:-"rungms"}
 TMPDIR=${TMPDIR:-"/dev/shm"}
